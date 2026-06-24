@@ -673,10 +673,12 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
   const [branch, setBranch] = useState("Computer Engineering");
   const [cgpa, setCgpa] = useState("7.8");
   const [selectedSkills, setSelectedSkills] = useState<string[]>(["Java", "Python", "SQL", "Communication"]);
+  const [readOnly, setReadOnly] = useState(true);
 
   useEffect(() => {
     setEmail("");
     setPassword("");
+    setReadOnly(true);
   }, [mode]);
 
   const submitAuth = () => {
@@ -710,7 +712,11 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
             <span
               key={account.email}
               className="demo-btn-capsule"
-              onClick={() => { setEmail(account.email); setPassword(account.password); }}
+              onClick={() => {
+                setReadOnly(false);
+                setEmail(account.email);
+                setPassword(account.password);
+              }}
             >
               {account.label}
             </span>
@@ -727,8 +733,8 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
             <label>CGPA<input value={cgpa} onChange={(event) => setCgpa(event.target.value)} /></label>
             <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
           </>}
-          <label>Email<input value={email} autoComplete="new-email-field" onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
-          <label>Password<input type="password" value={password} autoComplete="new-password-field" onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <label>Email<input value={email} readOnly={readOnly} onFocus={() => setReadOnly(false)} onClick={() => setReadOnly(false)} autoComplete="new-email-field" onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <label>Password<input type="text" className="no-autofill-password" value={password} readOnly={readOnly} onFocus={() => setReadOnly(false)} onClick={() => setReadOnly(false)} autoComplete="new-password-field" onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
           <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
             {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
           </button>

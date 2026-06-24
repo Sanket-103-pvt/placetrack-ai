@@ -450,3 +450,7 @@ kbd { border: 1px solid var(--line); background: var(--panel); border-radius: 6p
   border-color: #8c6cff80;
 }
 
+.no-autofill-password {
+  -webkit-text-security: disc !important;
+}
+
