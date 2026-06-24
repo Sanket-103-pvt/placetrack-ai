@@ -22,7 +22,12 @@ export type LoginResponse = { token: string; user: SessionUser };
 
 async function parseResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
-  const data = text ? JSON.parse(text) : {};
+  let data: any = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { error: text || response.statusText || "Request failed" };
+  }
   if (!response.ok) {
     throw new Error(data.error ?? data.message ?? "Request failed");
   }

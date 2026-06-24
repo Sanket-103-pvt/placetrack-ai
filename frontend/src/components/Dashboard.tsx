@@ -695,8 +695,10 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
       } else {
         await onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills, role });
       }
-    } catch (error) {
-      setErrorMsg(error instanceof Error ? error.message : "Authentication failed");
+    } catch (error: any) {
+      console.error("Authentication error caught:", error);
+      const msg = error?.message || error?.error || (typeof error === "string" ? error : "Authentication failed");
+      setErrorMsg(msg);
     }
   };
 
@@ -718,7 +720,7 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
           <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
           <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
         </div>
-        <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
+        <form onSubmit={(e) => { e.preventDefault(); submitAuth(); }} style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
           {mode === "signup" && <>
             <div>
               <label style={{ display: "block", marginBottom: "6px" }}>I am a</label>
@@ -757,13 +759,13 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
               </label>
             </>}
           </>}
-          <label>Email<input value={email} placeholder="your@email.com" autoComplete="off" onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
-          <label>Password<input type="text" className="no-autofill-password" value={password} placeholder="Password" autoComplete="off" onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
-          <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
+          <label>Email<input value={email} placeholder="your@email.com" autoComplete="off" onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} /></label>
+          <label>Password<input type="text" className="no-autofill-password" value={password} placeholder="Password" autoComplete="off" onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }} /></label>
+          <button className="primary-button" disabled={loading} type="submit">
             {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
           </button>
           <button className="ghost-button" type="button" onClick={onToggleTheme}>{dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme</button>
-        </div>
+        </form>
       </div>
     </main>
   );
