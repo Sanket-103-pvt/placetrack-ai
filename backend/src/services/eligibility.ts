@@ -22,29 +22,44 @@ export function checkEligibility(student: StudentProfile, drive: DriveCriteria) 
   if (student.backlogs > drive.maxBacklogs) reasons.push(`Maximum ${drive.maxBacklogs} active backlogs allowed`);
   if (student.graduationYear !== drive.graduationYear) reasons.push(`Drive is for the ${drive.graduationYear} batch`);
 
-  // Base score calculation for matching basic criteria
-  const cgpaScore = Math.max(0, Math.min(25, Math.round((student.cgpa - drive.minCgpa) * 10) + 10)); // base 10, max 25
-  const branchScore = drive.allowedBranches.includes(student.branch) ? 15 : 0;
-  const backlogScore = student.backlogs <= drive.maxBacklogs ? 15 : 0;
-  const batchScore = student.graduationYear === drive.graduationYear ? 10 : 0;
-
-  // Dynamic Skill matching score
-  let skillsScore = 0;
-  const studentSkills = student.skills || [];
-  if (studentSkills.length > 0 && (drive.role || drive.description)) {
-    const textToMatch = `${drive.role || ""} ${drive.description || ""}`.toLowerCase();
-    let matchedSkillsCount = 0;
-    studentSkills.forEach((skill) => {
-      if (skill && textToMatch.includes(skill.toLowerCase())) {
-        matchedSkillsCount++;
-      }
-    });
-    // Award 10 points per matched skill, up to 30 points
-    skillsScore = Math.min(30, matchedSkillsCount * 10);
+  if (reasons.length > 0) {
+    return { eligible: false, reasons, score: 0 };
   }
 
-  const score = Math.max(20, Math.min(99, cgpaScore + branchScore + backlogScore + batchScore + skillsScore));
+  // Base score for eligible candidates starts at 50
+  let score = 50;
 
-  return { eligible: reasons.length === 0, reasons, score };
+  // 1. CGPA performance bonus (up to 15 points)
+  const cgpaDiff = student.cgpa - drive.minCgpa;
+  const cgpaBonus = Math.max(0, Math.min(15, Math.round(cgpaDiff * 10)));
+  score += cgpaBonus;
+
+  // 2. Skill matching bonus (up to 30 points)
+  let skillsBonus = 0;
+  const studentSkills = student.skills || [];
+  const textToMatch = `${drive.role || ""} ${drive.description || ""}`.toLowerCase();
+  
+  if (studentSkills.length > 0) {
+    let matchedCount = 0;
+    studentSkills.forEach((skill) => {
+      if (skill && textToMatch.includes(skill.toLowerCase())) {
+        matchedCount++;
+      }
+    });
+    skillsBonus = Math.min(30, matchedCount * 10);
+  }
+  score += skillsBonus;
+
+  // 3. Branch specificity bonus (up to 15 points)
+  if (drive.allowedBranches.length <= 2 && drive.allowedBranches.includes(student.branch)) {
+    score += 10;
+    if (student.branch === "AI & Data Science" && (textToMatch.includes("data science") || textToMatch.includes("ai") || textToMatch.includes("analyst"))) {
+      score += 5;
+    }
+  }
+
+  const finalScore = Math.max(50, Math.min(100, score));
+
+  return { eligible: true, reasons, score: finalScore };
 }
 
