@@ -1,4 +1,11 @@
 import { Router } from "express";
+
+// Helper to normalize string or string[] parameters from Express request objects
+function getFirstString(param: unknown): string | undefined {
+  if (typeof param === "string") return param;
+  if (Array.isArray(param)) return param[0];
+  return undefined;
+}
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
@@ -131,7 +138,8 @@ authRouter.get("/users", authenticate, authorize(UserRole.ADMIN), async (request
 });
 
 authRouter.delete("/users/:id", authenticate, authorize(UserRole.ADMIN), async (request, response) => {
-  const { id } = request.params;
+  const id = getFirstString(request.params.id);
+  if (!id) return response.status(400).json({ error: "Invalid user id" });
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) return response.status(404).json({ error: "User not found" });
   
@@ -146,12 +154,14 @@ authRouter.delete("/users/:id", authenticate, authorize(UserRole.ADMIN), async (
 });
 
 authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (request, response) => {
-  const { id } = request.params;
+  const id = getFirstString(request.params.id);
+  if (!id) return response.status(400).json({ error: "Invalid user id" });
   const input = z.object({
     name: z.string().min(2).optional(),
     email: z.string().email().optional(),
     role: z.enum(["STUDENT", "COORDINATOR", "ADMIN"]).optional(),
     branch: z.string().min(2).optional(),
+    graduationYear: z.number().int().min(2024).max(2035).optional(),
     cgpa: z.number().min(0).max(10).optional(),
     skills: z.array(z.string()).optional(),
     backlogs: z.number().int().min(0).max(10).optional()
@@ -174,15 +184,16 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
     if (input.role === "STUDENT" && !user.student) {
       await prisma.coordinator.deleteMany({ where: { userId: id } });
       await prisma.student.create({
-        data: {
-          userId: id,
-          name: input.name ?? "New Student",
-          branch: input.branch ?? "Computer Engineering",
-          cgpa: input.cgpa ?? 7.0,
-          skills: input.skills ?? [],
-          backlogs: input.backlogs ?? 0,
-          readinessScore: 70
-        }
+          data: {
+            userId: id,
+            name: input.name ?? "New Student",
+            branch: input.branch ?? "Computer Engineering",
+            graduationYear: input.graduationYear ?? 2027,
+            cgpa: input.cgpa ?? 7.0,
+            skills: input.skills ?? [],
+            backlogs: input.backlogs ?? 0,
+            readinessScore: 70
+          }
       });
     } else if (input.role === "COORDINATOR" && !user.coordinator) {
       await prisma.student.deleteMany({ where: { userId: id } });
