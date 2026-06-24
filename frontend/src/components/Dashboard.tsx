@@ -209,7 +209,7 @@ export function Dashboard() {
     }
   };
 
-  const handleSignup = async (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[] }) => {
+  const handleSignup = async (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[]; role: "STUDENT" | "COORDINATOR" }) => {
     setLoading(true);
     try {
       const session = await api<LoginResponse>("/api/auth/signup", null, {
@@ -220,7 +220,7 @@ export function Dashboard() {
       setUser(session.user);
       writeStorage("placetrack-token", session.token);
       writeStorage("placetrack-user", JSON.stringify(session.user));
-      flash("Account created and logged in");
+      flash(`Account created as ${input.role.toLowerCase()} — logged in`);
     } catch (error) {
       flash(error instanceof Error ? error.message : "Signup failed");
     } finally {
@@ -664,12 +664,13 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
   loading: boolean;
   onToggleTheme: () => void;
   onLogin: (email: string, password: string) => void;
-  onSignup: (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[] }) => void;
+  onSignup: (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[]; role: "STUDENT" | "COORDINATOR" }) => void;
 }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [role, setRole] = useState<"STUDENT" | "COORDINATOR">("STUDENT");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [name, setName] = useState("New KK Wagh Student");
+  const [name, setName] = useState("");
   const [branch, setBranch] = useState("Computer Engineering");
   const [cgpa, setCgpa] = useState("7.8");
   const [selectedSkills, setSelectedSkills] = useState<string[]>(["Java", "Python", "SQL", "Communication"]);
@@ -677,15 +678,16 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
   useEffect(() => {
     setEmail("");
     setPassword("");
+    setName("");
+    setCgpa("7.8");
+    setRole("STUDENT");
   }, [mode]);
 
   const submitAuth = () => {
-    if (mode === "signup") {
-      const isDemoEmail = demoAccounts.some((a) => a.email.toLowerCase() === email.toLowerCase().trim());
-      if (isDemoEmail) { alert("Demo account emails cannot be used for signup. Use a unique email."); return; }
-      onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills });
-    } else {
+    if (mode === "signin") {
       onLogin(email, password);
+    } else {
+      onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills, role });
     }
   };
 
@@ -694,39 +696,53 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
       <div className="login-card card">
         <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
         <span className="eyebrow">Campus placement command center</span>
-        <h1>{mode === "signin" ? "Login and run the full workflow." : "Create a student account."}</h1>
-        <p className="section-copy">{mode === "signin" ? "Click a demo role below to instantly sign in, or type your own credentials." : "Signup creates a student profile and logs you in instantly."}</p>
+        <h1>{mode === "signin" ? "Login to your account." : "Create your account."}</h1>
+        <p className="section-copy">{mode === "signin" ? "Enter your email and password to access your placement dashboard." : "Choose your role and fill in your details to get started."}</p>
         <div className="auth-tabs">
           <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
           <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
         </div>
-        {mode === "signin" && (
-          <div className="demo-buttons" style={{ marginTop: "8px" }}>
-            {demoAccounts.map((account) => (
-              <span
-                key={account.email}
-                className="demo-btn-capsule"
-                onClick={() => onLogin(account.email, account.password)}
-              >
-                {account.label}
-              </span>
-            ))}
-            <p className="helper-text" style={{ marginTop: "6px", fontSize: "11px" }}>↑ One click instant login — or fill fields below manually</p>
-          </div>
-        )}
-        <div style={{ display: "grid", gap: "16px", marginTop: "8px" }}>
+        <div style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
           {mode === "signup" && <>
-            <label>Name<input value={name} onChange={(e) => setName(e.target.value)} /></label>
-            <label>Branch
-              <select value={branch} onChange={(e) => setBranch(e.target.value)}>
-                {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-              </select>
-            </label>
-            <label>CGPA<input value={cgpa} onChange={(e) => setCgpa(e.target.value)} /></label>
-            <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
+            <div>
+              <label style={{ display: "block", marginBottom: "6px" }}>I am a</label>
+              <div className="role-selector">
+                <button
+                  type="button"
+                  className={role === "STUDENT" ? "role-btn active" : "role-btn"}
+                  onClick={() => setRole("STUDENT")}
+                >
+                  🎓 Student
+                </button>
+                <button
+                  type="button"
+                  className={role === "COORDINATOR" ? "role-btn active" : "role-btn"}
+                  onClick={() => setRole("COORDINATOR")}
+                >
+                  🏢 Coordinator
+                </button>
+              </div>
+            </div>
+            <label>Name<input value={name} placeholder="Your full name" onChange={(e) => setName(e.target.value)} /></label>
+            {role === "STUDENT" && <>
+              <label>Branch
+                <select value={branch} onChange={(e) => setBranch(e.target.value)}>
+                  {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                </select>
+              </label>
+              <label>CGPA<input value={cgpa} placeholder="e.g. 8.2" onChange={(e) => setCgpa(e.target.value)} /></label>
+              <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
+            </>}
+            {role === "COORDINATOR" && <>
+              <label>Department
+                <select value={branch} onChange={(e) => setBranch(e.target.value)}>
+                  {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                </select>
+              </label>
+            </>}
           </>}
-          <label>Email<input value={email} autoComplete="off" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
-          <label>Password<input type="text" className="no-autofill-password" value={password} autoComplete="off" onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
+          <label>Email<input value={email} placeholder="your@email.com" autoComplete="off" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
+          <label>Password<input type="text" className="no-autofill-password" value={password} placeholder="Password" autoComplete="off" onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
           <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
             {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
           </button>

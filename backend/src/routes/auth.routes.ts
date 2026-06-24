@@ -26,17 +26,31 @@ authRouter.post("/signup", async (request, response) => {
     name: z.string().min(2),
     email: z.string().email(),
     password: z.string().min(6),
-    branch: z.string().min(2).default("CSE"),
+    role: z.enum(["STUDENT", "COORDINATOR"]).default("STUDENT"),
+    branch: z.string().min(2).default("Computer Engineering"),
     cgpa: z.number().min(0).max(10).default(7),
     graduationYear: z.number().int().min(2024).max(2035).default(2027),
     skills: z.array(z.string()).default(["Java", "SQL", "Communication"]),
     backlogs: z.number().int().min(0).max(10).default(0)
   }).parse(request.body);
 
+  const existing = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+  if (existing) return response.status(409).json({ error: "Email already registered" });
+
   const passwordHash = await bcrypt.hash(input.password, 10);
-  const readinessScore = Math.min(95, Math.max(35, Math.round(input.cgpa * 8 + input.skills.length * 3 - input.backlogs * 8)));
-  const user = await prisma.user.create({
-    data: {
+
+  let userData: Parameters<typeof prisma.user.create>[0]["data"];
+
+  if (input.role === "COORDINATOR") {
+    userData = {
+      email: input.email.toLowerCase(),
+      passwordHash,
+      role: "COORDINATOR",
+      coordinator: { create: { department: input.branch } }
+    };
+  } else {
+    const readinessScore = Math.min(95, Math.max(35, Math.round(input.cgpa * 8 + input.skills.length * 3 - input.backlogs * 8)));
+    userData = {
       email: input.email.toLowerCase(),
       passwordHash,
       role: "STUDENT",
@@ -52,9 +66,10 @@ authRouter.post("/signup", async (request, response) => {
           mockTestCount: 0
         }
       }
-    },
-    include: { student: true, coordinator: true }
-  });
+    };
+  }
+
+  const user = await prisma.user.create({ data: userData, include: { student: true, coordinator: true } });
   await audit(user.id, "SIGNUP", "auth");
   const { passwordHash: _, ...safeUser } = user;
   response.status(201).json({ token: signToken(user.id, user.role), user: safeUser });
