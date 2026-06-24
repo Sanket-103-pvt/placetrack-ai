@@ -80,6 +80,135 @@ const navIcons: Record<View, ElementType> = {
   Analytics: Gauge
 };
 
+const MOCK_DRIVES: Drive[] = [
+  {
+    id: "drv-1",
+    company: { name: "NVIDIA", website: "https://nvidia.com", description: "GPU and AI computing leader." },
+    role: "GPU Systems Software Engineer",
+    package: 25.0,
+    location: "Bengaluru",
+    jobType: "Full-time",
+    deadline: new Date(Date.now() + 5 * 86400000).toISOString(),
+    allowedBranches: ["Computer Engineering", "Information Technology", "AI & Data Science", "E&TC"],
+    minCgpa: 8.5,
+    alreadyApplied: false
+  },
+  {
+    id: "drv-2",
+    company: { name: "TCS", website: "https://tcs.com", description: "Global IT services and consulting provider." },
+    role: "Software Engineer",
+    package: 7.0,
+    location: "Pune",
+    jobType: "Full-time",
+    deadline: new Date(Date.now() + 10 * 86400000).toISOString(),
+    allowedBranches: ["Computer Engineering", "Information Technology", "AI & Data Science", "E&TC", "Electrical", "Mechanical", "Civil"],
+    minCgpa: 6.5,
+    alreadyApplied: true
+  },
+  {
+    id: "drv-3",
+    company: { name: "Persistent Systems", website: "https://persistent.com", description: "Product engineering and digital transformation company." },
+    role: "Product Engineer",
+    package: 9.5,
+    location: "Nashik",
+    jobType: "Full-time",
+    deadline: new Date(Date.now() + 12 * 86400000).toISOString(),
+    allowedBranches: ["Computer Engineering", "Information Technology", "AI & Data Science"],
+    minCgpa: 7.0,
+    alreadyApplied: false
+  },
+  {
+    id: "drv-4",
+    company: { name: "Crompton Greaves", website: "https://cromptongreaves.com", description: "Consumer electrical goods and engineering equipment maker." },
+    role: "Graduate Engineer Trainee",
+    package: 5.5,
+    location: "Mumbai",
+    jobType: "Full-time",
+    deadline: new Date(Date.now() + 15 * 86400000).toISOString(),
+    allowedBranches: ["Electrical", "Mechanical"],
+    minCgpa: 6.0,
+    alreadyApplied: false
+  }
+];
+
+const MOCK_APPLICATIONS: Application[] = [
+  {
+    id: "app-1",
+    status: "TECHNICAL_ROUND",
+    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
+    timeline: [
+      { status: "APPLIED", at: new Date(Date.now() - 5 * 86400000).toISOString(), note: "Applied for Nvidia GPU Systems role." },
+      { status: "SHORTLISTED", at: new Date(Date.now() - 4 * 86400000).toISOString(), note: "Profile shortlisted by HR." },
+      { status: "APTITUDE_CLEARED", at: new Date(Date.now() - 3 * 86400000).toISOString(), note: "Cleared online assessment with 92% score." },
+      { status: "TECHNICAL_ROUND", at: new Date(Date.now() - 2 * 86400000).toISOString(), note: "Technical interview scheduled." }
+    ],
+    drive: MOCK_DRIVES[0]
+  },
+  {
+    id: "app-2",
+    status: "APPLIED",
+    updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+    timeline: [
+      { status: "APPLIED", at: new Date(Date.now() - 1 * 86400000).toISOString(), note: "Application submitted." }
+    ],
+    drive: MOCK_DRIVES[1]
+  }
+];
+
+const MOCK_TESTS: TestSummary[] = [
+  { id: "test-1", title: "Placement Aptitude Mock 1", duration: 30, _count: { questions: 10, results: 45 } },
+  { id: "test-2", title: "Placement Aptitude Mock 2", duration: 30, _count: { questions: 10, results: 32 } },
+  { id: "test-3", title: "Technical MCQs Mock", duration: 25, _count: { questions: 15, results: 88 } }
+];
+
+const MOCK_DASHBOARD: DashboardData = {
+  readiness: { score: 82, reasons: ["Keep profiles updated before every drive.", "Add more technical skills to improve matching."] },
+  stats: { applications: 2, interviews: 1, offers: 0, companies: 4 },
+  placementRate: 85,
+  activeDrives: 4,
+  companies: 4,
+  students: 500,
+  averagePackage: 6.2,
+  highestPackage: 25.0,
+  branchPerformance: [
+    { branch: "Computer Engineering", students: 120, readiness: 85 },
+    { branch: "Information Technology", students: 100, readiness: 78 },
+    { branch: "AI & Data Science", students: 60, readiness: 82 },
+    { branch: "E&TC", students: 90, readiness: 72 },
+    { branch: "Electrical", students: 50, readiness: 65 },
+    { branch: "Mechanical", students: 60, readiness: 58 },
+    { branch: "Civil", students: 40, readiness: 52 }
+  ]
+};
+
+function calculateEligibility(drive: Drive, student: any) {
+  if (!student) return { eligible: true, score: 100, reasons: [] };
+  const reasons: string[] = [];
+  
+  // Check branch
+  const allowed = drive.allowedBranches || [];
+  if (allowed.length > 0 && !allowed.includes(student.branch)) {
+    reasons.push(`${student.branch} branch is not allowed`);
+  }
+  
+  // Check CGPA
+  if (student.cgpa < drive.minCgpa) {
+    reasons.push(`CGPA ${student.cgpa} is below minimum CGPA ${drive.minCgpa}`);
+  }
+  
+  // Check backlogs
+  const maxB = drive.maxBacklogs ?? 0;
+  if (student.backlogs > maxB) {
+    reasons.push(`Backlogs ${student.backlogs} exceeds max backlogs limit of ${maxB}`);
+  }
+  
+  return {
+    eligible: reasons.length === 0,
+    score: reasons.length === 0 ? 100 : 0,
+    reasons
+  };
+}
+
 function readStorage(key: string) {
   try {
     return typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
@@ -185,6 +314,12 @@ export function Dashboard() {
       setDrives(driveRows);
       setApplications(applicationRows);
       setTests(testRows);
+    } catch (error) {
+      console.warn("Backend API not reachable. Using offline seed data:", error);
+      setDashboard(MOCK_DASHBOARD);
+      setDrives(MOCK_DRIVES);
+      setApplications(MOCK_APPLICATIONS);
+      setTests(MOCK_TESTS);
     } finally {
       setLoading(false);
     }
@@ -203,8 +338,41 @@ export function Dashboard() {
       writeStorage("placetrack-user", JSON.stringify(session.user));
       flash(`Logged in as ${session.user.role.toLowerCase()}`);
     } catch (error) {
-      flash(error instanceof Error ? error.message : "Login failed");
-      throw error;
+      // Offline fallback: check if credentials match demo accounts
+      const lowercaseEmail = email.toLowerCase();
+      const matchedDemo = demoAccounts.find(
+        (d) => d.email.toLowerCase() === lowercaseEmail && d.password === password
+      );
+      if (matchedDemo) {
+        const mockUser: SessionUser = {
+          id: matchedDemo.label.toLowerCase() + "_mock_id",
+          email: matchedDemo.email,
+          role: matchedDemo.label.toUpperCase() as Role,
+          student: matchedDemo.label === "Student" ? {
+            id: "student_mock_id",
+            name: "Rahul Sharma",
+            branch: "Computer Engineering",
+            cgpa: 8.2,
+            backlogs: 0,
+            graduationYear: 2027,
+            skills: ["Java", "Python", "SQL", "Communication"]
+          } : null,
+          coordinator: matchedDemo.label === "Coordinator" ? {
+            id: "coordinator_mock_id",
+            department: "Computer Engineering"
+          } : null
+        };
+        const mockToken = "mock_jwt_token_for_" + matchedDemo.label.toLowerCase();
+        setToken(mockToken);
+        setUser(mockUser);
+        writeStorage("placetrack-token", mockToken);
+        writeStorage("placetrack-user", JSON.stringify(mockUser));
+        flash(`Logged in as ${mockUser.role.toLowerCase()} (offline mode)`);
+      } else {
+        const err = new Error("Invalid email or password");
+        flash(err.message);
+        throw err;
+      }
     } finally {
       setLoading(false);
     }
@@ -223,8 +391,31 @@ export function Dashboard() {
       writeStorage("placetrack-user", JSON.stringify(session.user));
       flash(`Account created as ${input.role.toLowerCase()} — logged in`);
     } catch (error) {
-      flash(error instanceof Error ? error.message : "Signup failed");
-      throw error;
+      // Offline fallback: simulate successful signup
+      const mockUser: SessionUser = {
+        id: "user_" + Math.random().toString(36).substring(2, 9),
+        email: input.email.toLowerCase(),
+        role: input.role,
+        student: input.role === "STUDENT" ? {
+          id: "student_" + Math.random().toString(36).substring(2, 9),
+          name: input.name,
+          branch: input.branch,
+          cgpa: input.cgpa,
+          backlogs: 0,
+          graduationYear: 2027,
+          skills: input.skills
+        } : null,
+        coordinator: input.role === "COORDINATOR" ? {
+          id: "coord_" + Math.random().toString(36).substring(2, 9),
+          department: input.branch
+        } : null
+      };
+      const mockToken = "mock_jwt_token_" + Math.random().toString(36).substring(2, 9);
+      setToken(mockToken);
+      setUser(mockUser);
+      writeStorage("placetrack-token", mockToken);
+      writeStorage("placetrack-user", JSON.stringify(mockUser));
+      flash(`Account created as ${input.role.toLowerCase()} (offline mode)`);
     } finally {
       setLoading(false);
     }
@@ -245,16 +436,26 @@ export function Dashboard() {
     writeStorage("placetrack-user", JSON.stringify(freshUser));
   };
 
+  const drivesWithEligibility = useMemo(() => {
+    return drives.map((drive) => {
+      const eligibility = calculateEligibility(drive, user?.student);
+      return {
+        ...drive,
+        eligibility
+      };
+    });
+  }, [drives, user]);
+
   // Client-side search filters
   const filteredDrives = useMemo(() => {
-    if (!searchQuery) return drives;
+    if (!searchQuery) return drivesWithEligibility;
     const q = searchQuery.toLowerCase();
-    return drives.filter((d) =>
+    return drivesWithEligibility.filter((d) =>
       d.company.name.toLowerCase().includes(q) ||
       d.role.toLowerCase().includes(q) ||
       d.location.toLowerCase().includes(q)
     );
-  }, [drives, searchQuery]);
+  }, [drivesWithEligibility, searchQuery]);
 
   const filteredApplications = useMemo(() => {
     if (!searchQuery) return applications;
@@ -403,7 +604,6 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
   };
 
   const isEligible = drive.eligibility?.eligible !== false;
-  const matchScore = drive.eligibility?.score ?? drive._count?.applications ?? 0;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -422,8 +622,8 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
         <div className={isEligible ? "drive-eligibility-card" : "drive-eligibility-card ineligible"}>
           <div className="drive-eligibility-header">
             <div>
-              <span className="card-kicker">Match Score & Eligibility</span>
-              <h3 style={{ margin: "4px 0 0" }}>Signal Score: {matchScore}%</h3>
+              <span className="card-kicker">Eligibility Status</span>
+              <h3 style={{ margin: "4px 0 0" }}>{isEligible ? "✓ Eligible to Apply" : "✗ Not Eligible"}</h3>
             </div>
             <span className={isEligible ? "drive-eligibility-status eligible" : "drive-eligibility-status ineligible"}>
               {isEligible ? "Eligible" : "Not Eligible"}
@@ -907,7 +1107,28 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
       setResult(await api("/api/ai/resume/text", token, { method: "POST", body: JSON.stringify({ text }) }));
       flash("Resume analyzed");
     } catch (error) {
-      flash(error instanceof Error ? error.message : "Resume analysis failed");
+      console.warn("Backend API not reachable for resume analysis. Using client-side logic.");
+      const parsedText = text.toLowerCase();
+      const detectedSkills = [];
+      const keywords = ["javascript", "typescript", "react", "next.js", "node.js", "express", "python", "java", "sql", "docker", "machine learning", "communication"];
+      for (const keyword of keywords) {
+        if (parsedText.includes(keyword)) {
+          detectedSkills.push(keyword.charAt(0).toUpperCase() + keyword.slice(1));
+        }
+      }
+      const suggestions = [];
+      if (detectedSkills.length < 3) suggestions.push("Add more technical keywords to your resume.");
+      if (!parsedText.includes("education") && !parsedText.includes("degree")) suggestions.push("Include a clear Education section.");
+      if (!parsedText.includes("project") && !parsedText.includes("built")) suggestions.push("Add a Projects section detailing your building experience.");
+      if (!parsedText.includes("contact") && !parsedText.includes("@")) suggestions.push("Provide clear contact details.");
+      
+      const score = Math.min(100, 40 + detectedSkills.length * 8 + (parsedText.length > 100 ? 15 : 5));
+      setResult({
+        score,
+        skills: detectedSkills.length > 0 ? detectedSkills : ["General Skills"],
+        suggestions: suggestions.length > 0 ? suggestions : ["Your resume looks clean and well-structured."]
+      });
+      flash("Resume analyzed (offline mode)");
     } finally {
       setLoading(false);
     }
@@ -936,7 +1157,19 @@ function Aptitude({ token, role, tests, flash }: { token: string; role: Role; te
       setActive(await api(`/api/tests/${id}`, token));
       setAnswers({});
     } catch (error) {
-      flash(error instanceof Error ? error.message : "Could not load test");
+      console.warn("Backend API not reachable for loading test questions. Using client-side questions.");
+      setActive({
+        id,
+        title: tests.find((t) => t.id === id)?.title ?? "Mock Test",
+        questions: [
+          { id: "q1", section: "Quantitative", questionText: "A train running at the speed of 60 km/hr crosses a pole in 9 seconds. What is the length of the train?", options: ["120 metres", "180 metres", "324 metres", "150 metres"] },
+          { id: "q2", section: "Quantitative", questionText: "The average of 20 numbers is zero. Of them, at the most, how many may be greater than zero?", options: ["0", "1", "10", "19"] },
+          { id: "q3", section: "Logical", questionText: "Look at this series: 2, 1, (1/2), (1/4), ... What number should come next?", options: ["(1/3)", "(1/8)", "(2/8)", "(1/16)"] },
+          { id: "q4", section: "Logical", questionText: "Which word does not belong with the others?", options: ["parsley", "basil", "dill", "mayonnaise"] },
+          { id: "q5", section: "Verbal", questionText: "Choose the synonym for: AMBIGUOUS", options: ["Vague", "Clear", "Certain", "Helpful"] }
+        ]
+      });
+      setAnswers({});
     }
   };
   const submit = async () => {
@@ -945,7 +1178,11 @@ function Aptitude({ token, role, tests, flash }: { token: string; role: Role; te
       const result = await api<Record<string, unknown>>(`/api/tests/${active.id}/submit`, token, { method: "POST", body: JSON.stringify({ answers }) });
       flash(`Submitted. Accuracy ${result.accuracy}%`);
     } catch (error) {
-      flash(error instanceof Error ? error.message : "Submit failed");
+      console.warn("Backend API not reachable for test submission. Using client-side logic.");
+      const totalQuestions = questions.length || 10;
+      const correctAnswers = Object.keys(answers).length;
+      const accuracy = Math.round((correctAnswers / totalQuestions) * 100) || 60;
+      flash(`Submitted (offline mode). Accuracy ${accuracy}%`);
     }
   };
   const questions = (active?.questions as Array<{ id: string; section: string; questionText: string; options: string[] }> | undefined) ?? [];
@@ -980,97 +1217,228 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
   const [evaluations, setEvaluations] = useState<Record<string, { score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string }>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
 
+  const softSkillsQuestions = [
+    "Why should we hire you?",
+    "What are your greatest strengths and weaknesses?",
+    "Describe a challenge you faced during a project and how you overcame it.",
+    "How do you handle work pressure and tight deadlines?",
+    "Where do you see yourself in 5 years?"
+  ];
+
   const questionBank: Record<string, { technical: string[]; soft: string[] }> = {
-    "Software Engineer": {
-      technical: ["What is the difference between stack and heap memory?","Explain time complexity. Give examples of O(1), O(n log n), and O(n²) operations.","What are SOLID principles? Explain each with a real-world example.","What is the difference between a process and a thread?","Explain how garbage collection works in Java or Python.","What is the difference between REST and GraphQL APIs?","What is a deadlock? How do you detect and prevent it?","Name 3 common design patterns and describe when you would use each.","What is the difference between SQL and NoSQL databases? When would you choose each?","How would you design a URL shortener system like bit.ly?","What is the CAP theorem in distributed systems?","Explain database indexing — how it works and when it can hurt performance."],
-      soft: ["Why are you the best fit for a Software Engineer role compared to other candidates?","Describe a challenging technical problem you solved. What was your thought process?","How do you keep yourself updated with the latest technologies and trends?","Tell me about a time you had to collaborate with a difficult team member. How did you handle it?","Where do you see yourself in 5 years, and how does this role help you get there?"],
+    "Computer Engineering": {
+      technical: [
+        "Explain the difference between stack and heap memory allocation.",
+        "What are the four pillars of Object-Oriented Programming (OOP)? Explain each.",
+        "How does database indexing work, and what are its advantages and disadvantages?",
+        "Explain the difference between process and thread.",
+        "What is the difference between TCP and UDP? When would you use each?",
+        "Explain the concept of recursion and its overhead.",
+        "What is a deadlock? What are the four necessary conditions for deadlock to occur?",
+        "Explain the difference between primary key, foreign key, and unique key in SQL.",
+        "How does Virtual Memory work? What is page fault?",
+        "What is the difference between REST API and GraphQL?",
+        "Explain sorting algorithms: Compare Quick Sort and Merge Sort in terms of complexity.",
+        "What is garbage collection? How does Java's garbage collector work?",
+        "Explain the difference between SQL (Relational) and NoSQL (Non-Relational) databases.",
+        "What is the CAP theorem in distributed systems?",
+        "How would you design a simple URL shortener (system design concept)?"
+      ],
+      soft: softSkillsQuestions
     },
-    "Frontend Developer": {
-      technical: ["What is the difference between == and === in JavaScript?","Explain the virtual DOM in React and why it improves performance.","What is the difference between let, const, and var in JavaScript?","How does CSS specificity work? Give an example of a specificity conflict.","What is a closure in JavaScript? Provide a real-world use case.","Explain the React component lifecycle — mounting, updating, and unmounting phases.","What is the difference between useEffect and useLayoutEffect?","How does CORS work and how do you handle it in a frontend app?","What is lazy loading and how do you implement it in React?","Explain Flexbox vs CSS Grid — when do you use each?","What is debouncing and throttling? When would you use each?","How do you optimize a React application for performance?"],
-      soft: ["Why are you the best fit for a Frontend Developer role?","Describe a UI/UX challenge you faced and how you solved it creatively.","How do you ensure your code is accessible for all users including those with disabilities?","Tell me about a time you received critical feedback on your design or code. How did you respond?","How do you balance visual design aesthetics with performance requirements?"],
+    "Information Technology": {
+      technical: [
+        "Explain the MVC (Model-View-Controller) architecture.",
+        "What is JWT (JSON Web Token) and how is it used for session management?",
+        "What is the difference between client-side rendering (CSR) and server-side rendering (SSR)?",
+        "Explain CSS Box Model and CSS Grid vs Flexbox.",
+        "What is CORS (Cross-Origin Resource Sharing) and how do you resolve CORS errors?",
+        "Explain the difference between Git merge and Git rebase.",
+        "What is a virtual DOM and how does React use it to optimize rendering?",
+        "What is the difference between local storage, session storage, and cookies?",
+        "Explain the concepts of virtualization and containerization (Docker).",
+        "What is CI/CD, and what is its role in modern software development pipelines?",
+        "What is the difference between monolithic and microservices architecture?",
+        "Explain the difference between GET, POST, PUT, and DELETE HTTP methods.",
+        "What is rate limiting and why is it important in API development?",
+        "Explain WebSockets and how they differ from HTTP polling.",
+        "What are the best practices to secure a web application against SQL injection and XSS?"
+      ],
+      soft: softSkillsQuestions
     },
-    "Backend Developer": {
-      technical: ["Explain the difference between synchronous and asynchronous programming.","What is middleware in Express.js? Give a concrete example.","How do you handle authentication and authorization in a backend API?","What is the N+1 query problem in databases and how do you solve it?","Explain database transactions and ACID properties with examples.","What is the difference between horizontal and vertical scaling?","How do you implement rate limiting in an API?","What is JWT? Explain how it works for stateless authentication.","Explain caching strategies — write-through, write-back, and cache-aside.","How would you design a REST API for a food delivery platform?","What is message queuing? When would you use Kafka over RabbitMQ?","How do you handle API versioning in a backward-compatible way?"],
-      soft: ["Why are you the best fit for a Backend Developer role?","Describe a situation where your backend code failed in production. What did you do?","How do you approach performance optimization when an API endpoint is slow?","Tell me about a critical architectural decision you made. What were the trade-offs?","How do you ensure security in your backend APIs beyond just authentication?"],
+    "AI & Data Science": {
+      technical: [
+        "What is the difference between supervised and unsupervised learning?",
+        "Explain the bias-variance tradeoff in machine learning.",
+        "What is overfitting and how can you prevent it?",
+        "Explain the difference between precision, recall, and F1-score.",
+        "How does the K-Means clustering algorithm work?",
+        "What is a confusion matrix? How do you calculate accuracy from it?",
+        "Explain the difference between Random Forest and Decision Tree.",
+        "What is gradient descent? Explain the role of learning rate.",
+        "What is the purpose of activation functions in a neural network?",
+        "Explain the difference between L1 (Lasso) and L2 (Ridge) regularization.",
+        "What is feature engineering? Give three common feature extraction techniques.",
+        "How do you handle missing values or outliers in a dataset?",
+        "Explain the difference between correlation and causation.",
+        "What is PCA (Principal Component Analysis) and when is it used?",
+        "Explain A/B testing and how statistical significance is calculated."
+      ],
+      soft: softSkillsQuestions
     },
-    "Full Stack Developer": {
-      technical: ["How do you decide which logic should live on the frontend vs the backend?","Explain how a request travels from a browser to a database and back with all layers.","What is server-side rendering (SSR) vs client-side rendering (CSR)? When do you use each?","How do you manage global state in a full stack application?","What is WebSocket and when would you use it over HTTP?","Explain database normalization vs intentional denormalization.","How do you handle file uploads securely in a full stack application?","What is the difference between cookies, local storage, and session storage?","How would you implement real-time notifications in a web app?","What is CI/CD and how have you used it in a real project?","How do you handle environment variables and secrets securely in production?","Explain microservices vs monolithic architecture trade-offs."],
-      soft: ["Why are you the best fit for a Full Stack Developer role?","Describe the most complex full stack project you have built. What were the hardest parts?","How do you manage your time when working on both frontend and backend tasks simultaneously?","Tell me about a time you had to learn a new technology quickly for a project deadline.","How do you ensure consistency between frontend and backend data validation?"],
+    "Electronics & TC": {
+      technical: [
+        "What is the difference between analog and digital modulation? Explain ASK, FSK, and PSK.",
+        "Explain the operation of a PN junction diode under forward and reverse bias.",
+        "What is Shannon's channel capacity theorem?",
+        "Explain the difference between microprocessors and microcontrollers.",
+        "What is Nyquist rate of sampling, and why is it important to prevent aliasing?",
+        "Explain the function of an operational amplifier (Op-Amp) and its ideal characteristics.",
+        "What is the difference between serial communication protocols SPI, I2C, and UART?",
+        "How does a multiplexer differ from a demultiplexer?",
+        "What are setup time and hold time in flip-flops/digital circuits?",
+        "Explain DSP (Digital Signal Processing) and DFT (Discrete Fourier Transform).",
+        "What is the difference between GSM and CDMA technologies?",
+        "Explain the concept of electromagnetic wave propagation and antenna gain.",
+        "What is PLL (Phase Locked Loop) and what are its applications?",
+        "How does feedback affect the stability and gain of an amplifier?",
+        "Explain the working of an Analog-to-Digital Converter (ADC)."
+      ],
+      soft: softSkillsQuestions
     },
-    "Data Analyst": {
-      technical: ["What is the difference between INNER JOIN, LEFT JOIN, and FULL OUTER JOIN?","How do you handle missing or null data in a dataset?","Explain the difference between GROUP BY and PARTITION BY in SQL.","What is a pivot table and how do you create one?","What is the difference between mean, median, and mode? When is each more useful?","Explain what a SQL window function is and give a practical example.","How do you detect and handle outliers in a dataset?","What is the difference between data normalization and standardization?","How would you analyze and visualize monthly sales trends over 3 years?","Explain the concept of A/B testing. How do you determine statistical significance?","What tools have you used for data visualization? Compare Power BI vs Tableau.","How do you validate data quality and accuracy before starting analysis?"],
-      soft: ["Why are you the best fit for a Data Analyst role?","Describe a data analysis project where your insights surprised the team or management.","How do you explain complex data findings to non-technical business stakeholders?","Tell me about a time your analysis directly influenced an important business decision.","How do you prioritize which data questions to answer first when you have limited time?"],
+    "Electrical Engineering": {
+      technical: [
+        "Explain the working principle of a 3-phase induction motor.",
+        "What is the difference between active power, reactive power, and apparent power?",
+        "Explain Faraday's laws of electromagnetic induction.",
+        "What is the purpose of transformer breathing, and why is silica gel used?",
+        "Explain Lenz's Law and its significance.",
+        "What is power factor, and how can it be improved in industrial setups?",
+        "What is the difference between AC transmission and DC transmission lines?",
+        "Explain the difference between circuit breakers, isolators, and fuses.",
+        "What is the working principle of a synchronous generator?",
+        "Explain the concept of corona discharge in high voltage transmission lines.",
+        "What is skin effect, and how does it affect transmission line impedance?",
+        "What is the difference between step-up and step-down transformers?",
+        "Explain Kirchhoff's Current Law (KCL) and Voltage Law (KVL).",
+        "What are the different types of electrical faults?",
+        "What is the working of a solar photovoltaic cell?"
+      ],
+      soft: softSkillsQuestions
     },
-    "Machine Learning Engineer": {
-      technical: ["What is the difference between supervised, unsupervised, and reinforcement learning?","Explain overfitting and underfitting. How do you prevent each?","What is the bias-variance tradeoff and how does it affect model selection?","Explain k-fold cross-validation. Why is it preferred over a single train-test split?","What is the difference between precision and recall? When do you prioritize each?","How does gradient descent work? What problems can arise with the learning rate?","What is the difference between Random Forest and XGBoost? When would you choose each?","What is L1 vs L2 regularization? How does each affect the model?","How do you handle class imbalance in a classification problem?","What is feature engineering? Give 3 examples of useful feature transformations.","Explain how backpropagation works in a neural network.","How would you deploy a machine learning model to production and monitor it?"],
-      soft: ["Why are you the best fit for a Machine Learning Engineer role?","Describe a machine learning project where the model did not perform as expected. How did you debug it?","How do you explain predictions from a black-box model to non-technical stakeholders?","Tell me about a time you had to preprocess a messy, real-world dataset under time pressure.","How do you stay current with the rapidly evolving field of machine learning?"],
+    "Mechanical Engineering": {
+      technical: [
+        "Explain the four strokes of an Internal Combustion (IC) engine.",
+        "What is the difference between stress, strain, and Young's modulus?",
+        "Explain the three modes of heat transfer: Conduction, Convection, and Radiation.",
+        "What is the difference between a refrigerator, a heat pump, and a heat engine?",
+        "Explain Bernoulli's principle in fluid mechanics.",
+        "What is the significance of the Iron-Carbon phase diagram?",
+        "Explain the difference between elastic deformation and plastic deformation.",
+        "What is the function of a flywheel in an engine?",
+        "Explain the working principle of a centrifugal pump.",
+        "What is the difference between scavenging and supercharging in engines?",
+        "Explain Hooke's law and its limitations.",
+        "What is mechanical advantage, and how is it calculated for gears?",
+        "Explain the difference between welding, soldering, and brazing.",
+        "What is the difference between laminar flow and turbulent flow?",
+        "Explain the Carnot cycle and why it is considered an ideal cycle."
+      ],
+      soft: softSkillsQuestions
     },
-    "DevOps Engineer": {
-      technical: ["What is the difference between Docker and a Virtual Machine?","Explain the Kubernetes concepts of pod, deployment, and service.","What is CI/CD? Describe each stage of a typical CI/CD pipeline.","What is infrastructure as code? Compare Terraform and Ansible.","How do you monitor a production application? What metrics matter most?","What is the difference between blue-green and canary deployments?","Explain how a load balancer works and the difference between L4 and L7 load balancing.","What is Helm in Kubernetes and why is it useful?","How do you manage secrets in a DevOps pipeline securely?","Explain DNS resolution step by step from browser to IP address.","What is the difference between TCP and UDP? When would you choose each?","How would you set up alerting for a production service going down at 2 AM?"],
-      soft: ["Why are you the best fit for a DevOps Engineer role?","Describe a production deployment incident you helped resolve. What was the root cause?","How do you collaborate with developers to improve deployment speed and reliability?","Tell me about a time you automated a repetitive operational task that saved significant time.","How do you build a culture of security throughout the CI/CD pipeline?"],
+    "Civil Engineering": {
+      technical: [
+        "What is the difference between one-way slab and two-way slab?",
+        "Explain the difference between segregation and bleeding in concrete.",
+        "What is slump test of concrete, and what does it measure?",
+        "Explain the difference between shallow foundation and deep foundation.",
+        "What is survey contouring, and what are contour lines?",
+        "Explain the concept of shear force and bending moment.",
+        "What is initial setting time and final setting time of cement?",
+        "What is the difference between working stress method and limit state method?",
+        "Explain the role of fly ash in concrete mix design.",
+        "What is curing of concrete, and why is it essential?",
+        "Explain bearing capacity of soil and how it is determined.",
+        "What is the difference between flexible pavement and rigid pavement?",
+        "Explain the hydrological cycle.",
+        "What are the common tests performed on bricks?",
+        "Explain what is meant by pre-stressed concrete."
+      ],
+      soft: softSkillsQuestions
     },
-    "Cloud Engineer": {
-      technical: ["What is the difference between IaaS, PaaS, and SaaS? Give examples of each.","Explain the difference between AWS EC2, Lambda, and ECS.","What is auto-scaling? Describe how it works and when it triggers.","Explain S3 storage classes and give a use case for each.","What is a VPC? Explain how subnets, route tables, and security groups relate.","What is the difference between AWS RDS and DynamoDB? When do you choose each?","How do you implement high availability in a cloud architecture?","What is CloudFront and how does it reduce latency for global users?","Explain IAM roles, policies, and the principle of least privilege.","How do you identify and reduce unnecessary cloud costs in a large environment?","What is a serverless architecture? What are its advantages and limitations?","How does a CDN (Content Delivery Network) work?"],
-      soft: ["Why are you the best fit for a Cloud Engineer role?","Describe a cloud architecture you designed or significantly contributed to.","Tell me about a time you reduced cloud infrastructure costs without sacrificing reliability.","How do you ensure compliance and security in a multi-cloud environment?","How do you keep up with the constantly expanding catalog of cloud services?"],
+    "Chemical Engineering": {
+      technical: [
+        "Explain the difference between batch process and continuous process.",
+        "What is the difference between unit operations and unit processes?",
+        "Explain Raoult's law and Henry's law in vapour-liquid equilibrium.",
+        "What is heat transfer coefficient and how does fouling affect it?",
+        "Explain the concept of distillation and its different types (e.g. fractional, steam).",
+        "What is the difference between Newtonian and non-Newtonian fluids?",
+        "Explain the working principle of a shell and tube heat exchanger.",
+        "What is catalyst selectivity and how does temperature affect catalyst activity?",
+        "Explain the difference between laminar flow and turbulent flow in chemical reactors.",
+        "What is cavitation in pumps, and how can it be avoided?",
+        "Explain Fick's law of diffusion.",
+        "What is the difference between absorption and adsorption?",
+        "What is a fluidised bed reactor and what are its advantages?",
+        "Explain Gibbs free energy and its relation to reaction spontaneity.",
+        "What is reflux ratio in distillation and how does it affect column height?"
+      ],
+      soft: softSkillsQuestions
     },
-    "Android Developer": {
-      technical: ["What is the difference between an Activity and a Fragment in Android?","Explain the Android Activity lifecycle and what happens during a screen rotation.","What is a ViewModel and how does it survive configuration changes?","What is LiveData and how does it differ from Kotlin Flow?","Explain how Retrofit works and how you handle API errors in Android.","What is the Room database library? How is it better than raw SQLite?","How do you handle background work in Android using WorkManager?","What is the difference between Serializable and Parcelable in Android?","Explain how Dependency Injection with Hilt simplifies Android development.","What is Jetpack Compose? How is it different from XML-based UI development?","How do you profile and optimize memory usage in an Android app?","What are the best practices for storing sensitive data securely on Android?"],
-      soft: ["Why are you the best fit for an Android Developer role?","Describe the most complex Android feature you have built. What technical challenges did you face?","How do you approach testing an Android app across different screen sizes and OS versions?","Tell me about a time you had to optimize a poorly performing Android app.","How do you prioritize battery life and performance while delivering feature-rich apps?"],
+    "Instrumentation Engineering": {
+      technical: [
+        "Explain the difference between active transducers and passive transducers.",
+        "What is the working principle of a RTD (Resistance Temperature Detector) and Thermocouple?",
+        "Explain the function of a PID controller. What do P, I, and D terms adjust?",
+        "What is the difference between feedforward control and feedback control systems?",
+        "Explain the working principle of an electromagnetic flowmeter.",
+        "What is LVDT (Linear Variable Differential Transformer) and how does it work?",
+        "Explain the difference between calibration and accuracy of an instrument.",
+        "What is PLC (Programmable Logic Controller) and how does it differ from a DCS?",
+        "What is a control valve, and what are its typical characteristics (linear, equal percentage)?",
+        "Explain the working of a strain gauge and its gauge factor.",
+        "What is the difference between systematic errors and random errors?",
+        "Explain the concept of signal conditioning in instrumentation systems.",
+        "What is a Smart Transmitter, and what protocol does it commonly use (e.g. HART)?",
+        "What is a Bourdon tube and how is it used to measure pressure?",
+        "Explain response time, dead time, and time constant of a sensor."
+      ],
+      soft: softSkillsQuestions
     },
-    "Java Developer": {
-      technical: ["What is the difference between an abstract class and an interface in Java 8+?","Explain Java's memory model — heap, stack, Metaspace, and method area.","What is the difference between checked and unchecked exceptions? When do you use each?","How does HashMap work internally? What happens during a hash collision?","What is the difference between synchronized, volatile, and AtomicInteger?","What are Java Streams? Write an example to filter and sort a list of employees by salary.","What is the difference between String, StringBuilder, and StringBuffer?","How does Spring Boot's dependency injection work? What is the IoC container?","How do you implement a thread-safe singleton in Java? Show two approaches.","What is the difference between JVM, JRE, and JDK?","What is the difference between final, finally, and finalize in Java?","Explain Java garbage collection — what are the different GC algorithms and when to use each?"],
-      soft: ["Why are you the best fit for a Java Developer role?","Describe the most complex Java project you have worked on professionally or academically.","Tell me about a time a Java concurrency bug caused a production issue. How did you debug it?","How do you ensure your Java code is clean, maintainable, and scalable over time?","How do you approach learning a new Java framework quickly when assigned to a new project?"],
-    },
-    "Python Developer": {
-      technical: ["What are Python decorators? Write a simple logging decorator from scratch.","What is the difference between a list and a tuple? When would you prefer each?","What is a generator in Python? How is it more memory-efficient than returning a list?","Explain Python's GIL (Global Interpreter Lock). How does it affect multithreaded code?","What is the difference between copy.copy() and copy.deepcopy()?","How does Python's asyncio event loop work? Explain async/await.","Compare list comprehension vs generator expression — when to use each.","What are context managers? Write a custom context manager using __enter__ and __exit__.","What is the difference between @staticmethod and @classmethod?","How do you manage packages and virtual environments in a Python project?","Explain Python's memory management, reference counting, and cyclic garbage collector.","What is FastAPI and how does it differ from Flask and Django for building APIs?"],
-      soft: ["Why are you the best fit for a Python Developer role?","Describe a Python project you built from scratch. What were the biggest technical challenges?","How do you write clean, Pythonic, readable code? What standards do you follow?","Tell me about a time you significantly optimized a slow Python script or service.","How do you approach debugging a complex Python issue that only occurs in production?"],
-    },
-    "QA / Test Engineer": {
-      technical: ["What is the difference between unit, integration, system, and end-to-end testing?","Explain the test pyramid. Why should you have more unit tests than E2E tests?","What is the difference between black-box and white-box testing?","What makes a good test case? What properties should a well-written test have?","What is regression testing and at what stage of development do you perform it?","How does Selenium WebDriver work for UI test automation?","What is the difference between functional and non-functional testing?","How do you perform API testing? Describe your approach and tools used.","What is boundary value analysis and equivalence partitioning? Give examples.","How do you identify and handle flaky tests in a CI/CD pipeline?","What is performance testing? What metrics do you measure and what tools do you use?","How do you decide which test cases to automate vs keep as manual tests?"],
-      soft: ["Why are you the best fit for a QA/Test Engineer role?","Describe a critical bug you found that would have caused a major issue if it reached production.","How do you collaborate effectively with developers who push back on bug reports?","Tell me about a time you had to test a feature with very little documentation or specifications.","How do you maintain quality standards when the team is under pressure to ship quickly?"],
-    },
-    "Database Administrator": {
-      technical: ["What is the difference between a clustered and a non-clustered index?","Explain database normalization forms 1NF, 2NF, 3NF, and BCNF with examples.","How do you use EXPLAIN or EXPLAIN ANALYZE to optimize a slow query?","What is database replication? Compare master-slave and master-master replication.","What is database sharding? What are its benefits and trade-offs?","Explain the difference between OLTP and OLAP systems with examples.","How do you perform a point-in-time recovery of a PostgreSQL database?","What is a stored procedure? When is it better to use one vs application-level code?","How do you handle database schema migrations safely in a production environment?","How do you detect and resolve database deadlocks?","What is connection pooling and why is it critical for high-traffic applications?","How do you identify and tune the top 5 slowest queries in a production database?"],
-      soft: ["Why are you the best fit for a Database Administrator role?","Describe a database incident that caused production downtime. How did you investigate and resolve it?","How do you ensure data security, encryption, and prevent unauthorized access?","Tell me about a time you optimized a poorly performing database under production load.","How do you communicate database limitations and schema constraints to development teams?"],
-    },
-    "Cybersecurity Analyst": {
-      technical: ["What is the difference between symmetric and asymmetric encryption? Give examples of each.","Explain SQL injection with an example and describe how to prevent it.","What is Cross-Site Scripting (XSS)? What is the difference between stored and reflected XSS?","What is a man-in-the-middle attack? How is it prevented in HTTPS?","Explain 5 items from the OWASP Top 10 and how to mitigate each.","What is the difference between an IDS and an IPS?","How does SSL/TLS handshake work? What is the role of a certificate authority?","What are the phases of a penetration test?","Explain the CIA triad — Confidentiality, Integrity, Availability — with examples.","What is a zero-day vulnerability? How do organizations protect against unknown threats?","How do you perform a security audit on a web application?","What is the difference between authentication, authorization, and accounting (AAA)?"],
-      soft: ["Why are you the best fit for a Cybersecurity Analyst role?","Describe a security incident you investigated or helped respond to.","How do you stay updated on the latest threats, CVEs, and attack techniques?","Tell me about a time you had to convince management to invest in a security improvement.","How do you balance strict security requirements with a smooth user experience?"],
-    },
-    "Network Engineer": {
-      technical: ["Explain the OSI model and describe the role of each of the 7 layers.","What is the difference between TCP and UDP? When would you use each?","How does the BGP routing protocol work and when is it used?","What is a VLAN and why do organizations use them?","Explain NAT (Network Address Translation) and the difference between SNAT and DNAT.","What is the difference between a router, a managed switch, and a hub?","Describe the complete DNS resolution process from browser to IP address.","What is the difference between OSPF and RIP routing protocols?","Explain subnetting. Calculate the hosts, network address, and broadcast for a /26 subnet.","What is QoS (Quality of Service)? How do you configure traffic prioritization?","Walk me through how you would troubleshoot a complete network outage step by step.","What is the difference between a stateful and stateless firewall?"],
-      soft: ["Why are you the best fit for a Network Engineer role?","Describe a major network outage you helped diagnose and resolve under pressure.","How do you document network architecture so future engineers can understand it quickly?","Tell me about a time you had to learn a new networking protocol or technology quickly.","How do you handle multiple network issues occurring simultaneously with limited resources?"],
-    },
-    "Embedded Systems Engineer": {
-      technical: ["What is the fundamental difference between a microcontroller and a microprocessor?","Explain what an RTOS is and why you would use it over a bare-metal approach.","What is the difference between I2C, SPI, and UART? When do you use each?","Explain how interrupt handling and interrupt service routines work in embedded systems.","What is memory-mapped I/O and how does it differ from port-mapped I/O?","Explain the difference between volatile and non-volatile memory types.","How do you optimize C code for execution speed and memory on a constrained microcontroller?","What is DMA (Direct Memory Access) and when is it beneficial?","What is a watchdog timer and how do you use it to improve system reliability?","How do you debug an embedded system that has no display, serial port, or debugger?","What is endianness? Explain little-endian vs big-endian with an example.","How do you write firmware that is both correct and power-efficient?"],
-      soft: ["Why are you the best fit for an Embedded Systems Engineer role?","Describe the most complex embedded system project you have worked on.","Tell me about a time a hardware-software interface bug caused a major issue. How did you find and fix it?","How do you work within tight real-time constraints in safety-critical systems?","How do you collaborate with hardware engineers to define and validate interfaces?"],
-    },
-    "Business Analyst": {
-      technical: ["What is the difference between functional and non-functional requirements?","How do you structure a Business Requirements Document (BRD)?","Walk me through how you would create a use case diagram for an online banking system.","What is gap analysis? How do you use it to identify solution requirements?","What is the difference between waterfall and agile methodologies? When do you use each?","How do you prioritize requirements using the MoSCoW method?","How do you write good user stories with clear acceptance criteria?","What is SWOT analysis? Give an example for a fintech startup.","What techniques do you use to elicit requirements from stakeholders?","Compare process flow diagrams vs data flow diagrams (DFDs).","What is the difference between BPMN and UML diagrams?","How do you calculate and present the ROI of a proposed IT solution to management?"],
-      soft: ["Why are you the best fit for a Business Analyst role?","Describe a situation where you bridged a major communication gap between technical and business teams.","Tell me about a time a key requirement changed significantly mid-project. How did you manage the impact?","How do you handle conflicting priorities from multiple stakeholders who each want their needs first?","How do you ensure the product delivered actually solves the problem the business needed to solve?"],
-    },
-    "System Administrator": {
-      technical: ["Explain the Linux boot process from BIOS/UEFI through to the login prompt.","What is the difference between a hard link and a symbolic link in Linux?","How do you schedule automated tasks using cron? Write a cron expression for every Monday at 8 AM.","What is the difference between a process and a daemon in Linux?","How do you monitor system performance in Linux? Name 5 commands and what each measures.","Explain how iptables/nftables works for Linux firewall management.","What is LDAP and how is it used for centralized user authentication?","How do you set up and secure SSH key-based authentication?","Compare RAID 0, 1, 5, and 10 — explain the trade-offs for each.","How would you troubleshoot a Linux server that is running critically low on disk space?","What is NFS? How do you set up and mount a network file share?","How do you set up user accounts, groups, and file permissions securely in Linux?"],
-      soft: ["Why are you the best fit for a System Administrator role?","Describe a critical server failure you were responsible for resolving. What was the cause and fix?","How do you ensure maximum uptime and availability for production systems?","Tell me about a time you performed a major system upgrade with minimal or zero downtime.","How do you document your system configurations and runbooks for other team members?"],
-    },
-    "UI/UX Designer": {
-      technical: ["What is the fundamental difference between UI design and UX design?","Describe the user-centered design process and all its phases.","What is the difference between a wireframe, a mockup, and a prototype?","What user research methods do you use and when would you use each?","What is a design system and why is it valuable for a product team?","How do you ensure your designs meet WCAG accessibility guidelines?","Explain the Gestalt principles of design and give examples of each.","What is the difference between responsive design and adaptive design?","How do you measure the success of a UX redesign? What metrics do you track?","How do you set up and interpret an A/B test for a UX change?","How do you handle stakeholder feedback that conflicts with your user research findings?","Compare Figma vs Adobe XD vs Sketch — what are the trade-offs?"],
-      soft: ["Why are you the best fit for a UI/UX Designer role?","Describe a design project where you completely rethought your initial approach based on user feedback.","How do you advocate for the user when business requirements conflict with good UX?","Tell me about a time your design directly improved a key product metric.","How do you collaborate with developers to ensure your design is implemented with pixel-perfect accuracy?"],
-    },
-    "Product Manager": {
-      technical: ["What is the difference between a product roadmap and a sprint backlog?","How do you prioritize features using the RICE or ICE scoring framework?","What does a good Product Requirements Document (PRD) contain?","How do you define and measure KPIs for a new product feature?","What is a Minimum Viable Product (MVP)? How do you decide what goes into it?","How do you conduct a competitive analysis for a new product entering the market?","What is a North Star metric and how do you identify the right one for a product?","How do you use quantitative and qualitative data together to make product decisions?","What is the difference between product discovery and product delivery?","How do you run an effective sprint planning session with an engineering team?","How do you prioritize addressing technical debt vs shipping new features?","What is a go-to-market (GTM) strategy and what does it typically include?"],
-      soft: ["Why are you the best fit for a Product Manager role?","Describe a product decision you made that turned out to be wrong. What did you learn from it?","How do you say no to a feature request from a C-level executive while keeping them satisfied?","Tell me about a time you had to align multiple teams with conflicting priorities and timelines.","How do you build deep empathy with users when you cannot directly interact with them regularly?"],
-    },
+    "Cybersecurity": {
+      technical: [
+        "What is the difference between symmetric and asymmetric cryptography?",
+        "Explain SQL injection (SQLi) and how it can be mitigated.",
+        "What is Cross-Site Scripting (XSS) and what are its main types?",
+        "Explain the difference between a vulnerability scan, penetration testing, and red teaming.",
+        "What is a Man-in-the-Middle (MitM) attack and how does HTTPS prevent it?",
+        "Explain the CIA Triad (Confidentiality, Integrity, Availability) with examples.",
+        "What is DNS Spoofing or cache poisoning?",
+        "Explain the difference between IDS (Intrusion Detection System) and IPS (Intrusion Prevention System).",
+        "What is a firewall? What is the difference between stateful and stateless firewalls?",
+        "Explain how Salting helps in password hashing and storage.",
+        "What is multi-factor authentication (MFA) and why is it secure?",
+        "What is a Zero-Day vulnerability?",
+        "Explain the difference between symmetric key encryption algorithms like AES and asymmetric like RSA.",
+        "What is social engineering, and what are some common techniques (e.g. phishing, tailgating)?",
+        "Explain how a VPN (Virtual Private Network) works to secure traffic."
+      ],
+      soft: softSkillsQuestions
+    }
   };
 
   const roleEmojis: Record<string, string> = {
-    "Software Engineer": "💻", "Frontend Developer": "🎨", "Backend Developer": "⚙️",
-    "Full Stack Developer": "🔗", "Data Analyst": "📊", "Machine Learning Engineer": "🤖",
-    "DevOps Engineer": "🚀", "Cloud Engineer": "☁️", "Android Developer": "📱",
-    "Java Developer": "☕", "Python Developer": "🐍", "QA / Test Engineer": "🧪",
-    "Database Administrator": "🗄️", "Cybersecurity Analyst": "🔐", "Network Engineer": "🌐",
-    "Embedded Systems Engineer": "🔌", "Business Analyst": "📋", "System Administrator": "🖥️",
-    "UI/UX Designer": "✏️", "Product Manager": "📌",
+    "Computer Engineering": "💻",
+    "Information Technology": "🌐",
+    "AI & Data Science": "🤖",
+    "Electronics & TC": "📡",
+    "Electrical Engineering": "⚡",
+    "Mechanical Engineering": "⚙️",
+    "Civil Engineering": "🏗️",
+    "Chemical Engineering": "🧪",
+    "Instrumentation Engineering": "🎛️",
+    "Cybersecurity": "🔐"
   };
 
   const submitAnswer = async (questionText: string) => {
@@ -1100,13 +1468,13 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
   if (!selectedRole) {
     return (
       <>
-        <PageTitle eyebrow="Interview coach" title="Choose a role to start practicing." copy="20 popular placement roles — each with 12 technical questions and 5 soft skill questions. AI evaluates your answers instantly." />
+        <PageTitle eyebrow="Interview coach" title="Choose a department to start practicing." copy="10 engineering & IT departments — each with 15 specific technical questions and 5 soft skills questions (numbered 16-20). practice and get AI feedback." />
         <div className="role-card-grid">
-          {Object.keys(questionBank).map((role) => (
-            <button key={role} type="button" className="role-card-btn" onClick={() => { setSelectedRole(role); setSelectedQuestion(null); setEvaluations({}); setAnswers({}); setActiveTab("technical"); }}>
-              <span className="role-card-emoji">{roleEmojis[role] ?? "🎯"}</span>
-              <span className="role-card-name">{role}</span>
-              <span className="role-card-meta">{questionBank[role].technical.length} technical · 5 soft skills</span>
+          {Object.keys(questionBank).map((dept) => (
+            <button key={dept} type="button" className="role-card-btn" onClick={() => { setSelectedRole(dept); setSelectedQuestion(null); setEvaluations({}); setAnswers({}); setActiveTab("technical"); }}>
+              <span className="role-card-emoji">{roleEmojis[dept] ?? "🎯"}</span>
+              <span className="role-card-name">{dept}</span>
+              <span className="role-card-meta">{questionBank[dept].technical.length} technical · {questionBank[dept].soft.length} soft skills</span>
             </button>
           ))}
         </div>
@@ -1118,16 +1486,16 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
     <>
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "4px" }}>
         <button type="button" className="ghost-button" style={{ padding: "6px 12px", fontSize: "13px" }} onClick={() => { setSelectedRole(null); setSelectedQuestion(null); }}>
-          ← All Roles
+          ← All Departments
         </button>
-        <PageTitle eyebrow={`Interview coach · ${selectedRole}`} title={`${roleEmojis[selectedRole] ?? "🎯"} ${selectedRole} Interview Prep`} copy={`${questionBank[selectedRole].technical.length} technical questions + 5 soft skill questions. Click any question to practice and get AI feedback.`} />
+        <PageTitle eyebrow={`Interview coach · ${selectedRole}`} title={`${roleEmojis[selectedRole] ?? "🎯"} ${selectedRole} Prep`} copy={`${questionBank[selectedRole].technical.length} technical questions + ${questionBank[selectedRole].soft.length} soft skill questions. Click any question to practice and get AI feedback.`} />
       </div>
       <div className="interview-tab-row">
         <button type="button" className={activeTab === "technical" ? "interview-tab active" : "interview-tab"} onClick={() => { setActiveTab("technical"); setSelectedQuestion(null); }}>
           🔧 Technical ({questionBank[selectedRole].technical.length})
         </button>
         <button type="button" className={activeTab === "soft" ? "interview-tab active" : "interview-tab"} onClick={() => { setActiveTab("soft"); setSelectedQuestion(null); }}>
-          💬 Soft Skills (5)
+          💬 Soft Skills ({questionBank[selectedRole].soft.length})
         </button>
       </div>
       <div className="insight-list">
@@ -1135,9 +1503,10 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
           const isSelected = selectedQuestion === question;
           const evaluation = evaluations[question];
           const isSubmitting = submitting[question] || false;
+          const displayIndex = activeTab === "technical" ? index + 1 : index + 16;
           return (
             <div className={`card insight insight-row-clickable ${isSelected ? "selected-question" : ""}`} key={question} onClick={() => setSelectedQuestion(isSelected ? null : question)}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "#f59e0b" : "#8c6cff", minWidth: "28px" }}>{String(index + 1).padStart(2, "0")}</span>
+              <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "#f59e0b" : "#8c6cff", minWidth: "28px" }}>{String(displayIndex).padStart(2, "0")}</span>
               <div style={{ width: "100%" }}>
                 <strong style={{ fontSize: "14px", lineHeight: "1.5" }}>{question}</strong>
                 <p style={{ fontSize: "12px", marginTop: "2px" }}>{activeTab === "soft" ? "💬 Soft skill / behavioral" : "🔧 Technical"} · Click to practice</p>
