@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:13.0
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: placetrack
+      POSTGRES_PASSWORD: placetrack
+      POSTGRES_DB: placetrack
+    ports:
+      - "5432:5432"
+    volumes:
+      - placetrack_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U placetrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  placetrack_data:

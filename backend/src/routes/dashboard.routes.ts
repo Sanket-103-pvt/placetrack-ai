@@ -1,0 +1,69 @@
+import { Router } from "express";
+import { ApplicationStatus, DriveStatus, UserRole } from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
+import { authenticate } from "../middleware/auth.js";
+import { predictReadiness } from "../services/readiness.js";
+
+export const dashboardRouter = Router();
+dashboardRouter.use(authenticate);
+
+dashboardRouter.get("/", async (request, response) => {
+  if (request.auth!.role === UserRole.STUDENT) {
+    const student = await prisma.student.findUnique({
+      where: { userId: request.auth!.userId },
+      include: {
+        applications: {
+          include: { drive: { include: { company: true } }, interview: true },
+          orderBy: { updatedAt: "desc" }
+        },
+        testResults: { orderBy: { completedAt: "desc" }, take: 10 }
+      }
+    });
+    if (!student) return response.status(404).json({ error: "Student profile not found" });
+    const averageAccuracy = student.testResults.length
+      ? student.testResults.reduce((sum, item) => sum + item.accuracy, 0) / student.testResults.length
+      : 0;
+    const readiness = predictReadiness({
+      cgpa: student.cgpa,
+      aptitudeAccuracy: averageAccuracy,
+      codingScore: 72 + Math.min(student.skills.length * 2, 18),
+      communicationScore: 70,
+      projects: 3,
+      internships: 1,
+      mockTests: student.mockTestCount,
+      backlogs: student.backlogs
+    });
+    if (Math.abs(student.readinessScore - readiness.score) >= 1) {
+      await prisma.student.update({ where: { id: student.id }, data: { readinessScore: readiness.score } });
+    }
+    return response.json({
+      profile: { id: student.id, name: student.name, branch: student.branch, cgpa: student.cgpa, graduationYear: student.graduationYear, skills: student.skills },
+      readiness,
+      stats: {
+        applications: student.applications.length,
+        interviews: student.applications.filter((item) => item.interview?.status === "SCHEDULED").length,
+        offers: student.applications.filter((item) => item.status === ApplicationStatus.SELECTED).length,
+        testAccuracy: Math.round(averageAccuracy)
+      },
+      applications: student.applications.slice(0, 5),
+      upcoming: student.applications.flatMap((item) => item.interview ? [{ ...item.interview, company: item.drive.company.name, role: item.drive.role }] : []).slice(0, 5)
+    });
+  }
+
+  const [students, companies, drives, applications, selectedRows, averages, branchRows] = await Promise.all([
+    prisma.student.count(),
+    prisma.company.count(),
+    prisma.placementDrive.count({ where: { status: DriveStatus.OPEN } }),
+    prisma.application.count(),
+    prisma.application.findMany({ where: { status: ApplicationStatus.SELECTED }, distinct: ["studentId"], select: { studentId: true } }),
+    prisma.placementDrive.aggregate({ _avg: { package: true }, _max: { package: true } }),
+    prisma.student.groupBy({ by: ["branch"], _count: { id: true }, _avg: { readinessScore: true } })
+  ]);
+  const selected = selectedRows.length;
+  response.json({
+    students, companies, activeDrives: drives, applications,
+    selected, placementRate: students ? Math.round(selected / students * 100) : 0,
+    averagePackage: averages._avg.package ?? 0, highestPackage: averages._max.package ?? 0,
+    branchPerformance: branchRows.map((row) => ({ branch: row.branch, students: row._count.id, readiness: Math.round(row._avg.readinessScore ?? 0) }))
+  });
+});

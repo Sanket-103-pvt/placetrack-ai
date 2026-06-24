@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  COORDINATOR
+  ADMIN
+}
+
+enum ApplicationStatus {
+  APPLIED
+  SHORTLISTED
+  APTITUDE_CLEARED
+  TECHNICAL_ROUND
+  HR_ROUND
+  SELECTED
+  REJECTED
+}
+
+enum DriveStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  COMPLETED
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  passwordHash  String
+  role          UserRole
+  student       Student?
+  coordinator   Coordinator?
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+  resumeAnalyses ResumeAnalysis[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Student {
+  id              String        @id @default(cuid())
+  userId          String        @unique
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  cgpa            Float
+  branch          String
+  backlogs        Int           @default(0)
+  graduationYear  Int
+  skills          String[]
+  resumeUrl       String?
+  readinessScore  Float         @default(0)
+  mockTestCount   Int           @default(0)
+  applications    Application[]
+  testResults     TestResult[]
+
+  @@index([branch, graduationYear])
+  @@index([readinessScore])
+}
+
+model Coordinator {
+  id          String @id @default(cuid())
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  String
+  phone       String?
+}
+
+model Company {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  logo        String?
+  website     String?
+  description String?
+  drives      PlacementDrive[]
+  createdAt   DateTime         @default(now())
+}
+
+model PlacementDrive {
+  id               String        @id @default(cuid())
+  companyId        String
+  company          Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  role             String
+  package          Float
+  location         String
+  jobType          String
+  description      String
+  minCgpa          Float
+  allowedBranches  String[]
+  maxBacklogs      Int
+  graduationYear   Int
+  deadline         DateTime
+  testDate         DateTime?
+  interviewDate    DateTime?
+  status           DriveStatus   @default(OPEN)
+  applications     Application[]
+  createdAt        DateTime      @default(now())
+
+  @@index([status, deadline])
+  @@index([graduationYear])
+}
+
+model Application {
+  id          String             @id @default(cuid())
+  studentId   String
+  driveId     String
+  student     Student            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  drive       PlacementDrive     @relation(fields: [driveId], references: [id], onDelete: Cascade)
+  status      ApplicationStatus  @default(APPLIED)
+  timeline    Json
+  interview   Interview?
+  appliedAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([studentId, driveId])
+  @@index([status])
+  @@index([driveId, status])
+}
+
+model Interview {
+  id              String      @id @default(cuid())
+  applicationId   String      @unique
+  application     Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  dateTime        DateTime
+  mode            String
+  locationOrLink  String
+  status          String
+  feedback        String?
+}
+
+model AptitudeTest {
+  id             String       @id @default(cuid())
+  title          String
+  duration       Int
+  sectionConfig  Json
+  questions      Question[]
+  results        TestResult[]
+  createdAt      DateTime     @default(now())
+}
+
+model Question {
+  id             String       @id @default(cuid())
+  testId         String
+  test           AptitudeTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  section        String
+  questionText   String
+  options        String[]
+  correctAnswer  Int
+  explanation    String
+}
+
+model TestResult {
+  id             String       @id @default(cuid())
+  studentId      String
+  testId         String
+  student        Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  test           AptitudeTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  score          Float
+  sectionScores  Json
+  accuracy       Float
+  strongAreas    String[]
+  weakAreas      String[]
+  completedAt    DateTime     @default(now())
+
+  @@unique([studentId, testId])
+  @@index([completedAt])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  message    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  resource   String
+  details    Json?
+  timestamp  DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([resource])
+}
+
+model ResumeAnalysis {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName    String?
+  score       Float
+  skills      String[]
+  sections    String[]
+  suggestions String[]
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+}

@@ -1,0 +1,17 @@
+node_modules
+.next
+dist
+.env
+*.log
+coverage
+uploads
+frontend/.next
+backend/dist
+.agents/
+.codex/
+outputs/
+work/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
