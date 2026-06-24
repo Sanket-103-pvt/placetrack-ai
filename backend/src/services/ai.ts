@@ -60,10 +60,7 @@ function cleanJsonResponse(text: string): string {
 async function callGemini(prompt: string) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
-  let model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
-  if (model === "gemini-1.5-flash") {
-    model = "gemini-2.0-flash";
-  }
+  const model = "gemini-2.5-flash";
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -128,8 +125,17 @@ export async function generateInterviewQuestionsSmart(role = "software engineer"
   const fallback = generateInterviewQuestions(role, count);
   try {
     const result = await callGemini(`Generate ${count} campus placement interview questions for role "${role}". Return JSON array only. Each item needs question, difficulty, focus.`);
-    if (!Array.isArray(result)) return fallback;
-    return result.slice(0, count).map((item, index) => ({
+    let questionsArray: any[] = [];
+    if (Array.isArray(result)) {
+      questionsArray = result;
+    } else if (result && typeof result === "object") {
+      const possibleArray = Object.values(result).find(val => Array.isArray(val));
+      if (possibleArray) {
+        questionsArray = possibleArray as any[];
+      }
+    }
+    if (!questionsArray || questionsArray.length === 0) return fallback;
+    return questionsArray.slice(0, count).map((item, index) => ({
       id: index + 1,
       question: String(item.question ?? fallback[index % fallback.length].question),
       difficulty: String(item.difficulty ?? fallback[index % fallback.length].difficulty),

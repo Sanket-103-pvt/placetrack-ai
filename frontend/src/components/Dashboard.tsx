@@ -716,7 +716,7 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
             </span>
           ))}
         </div>}
-        <form autoComplete="off" style={{ display: "grid", gap: "16px", marginTop: "8px" }} onSubmit={(event) => { event.preventDefault(); submitAuth(); }}>
+        <div style={{ display: "grid", gap: "16px", marginTop: "8px" }}>
           {mode === "signup" && <>
             <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
             <label>Branch
@@ -727,13 +727,13 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
             <label>CGPA<input value={cgpa} onChange={(event) => setCgpa(event.target.value)} /></label>
             <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
           </>}
-          <label>Email<input value={email} autoComplete="new-password" onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
-          <label>Password<input type="password" value={password} autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
-          <button className="primary-button" disabled={loading} type="submit">
+          <label>Email<input value={email} autoComplete="new-email-field" onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <label>Password<input type="password" value={password} autoComplete="new-password-field" onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
             {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
           </button>
           <button className="ghost-button" type="button" onClick={onToggleTheme}>{dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme</button>
-        </form>
+        </div>
       </div>
     </main>
   );
