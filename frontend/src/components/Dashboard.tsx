@@ -679,13 +679,24 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
     setPassword("");
   }, [mode]);
 
-  const submitAuth = () => mode === "signin"
-    ? onLogin(email, password)
-    : onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills });
+  const submitAuth = () => {
+    if (mode === "signup") {
+      const isDemoEmail = demoAccounts.some((account) => account.email.toLowerCase() === email.toLowerCase().trim());
+      if (isDemoEmail) {
+        alert("Demo account emails cannot be used for signup. Please use a unique email.");
+        return;
+      }
+    }
+    if (mode === "signin") {
+      onLogin(email, password);
+    } else {
+      onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills });
+    }
+  };
 
   return (
     <main className={dark ? "app dark login-app" : "app light login-app"}>
-      <form className="login-card card" onSubmit={(event) => { event.preventDefault(); submitAuth(); }}>
+      <div className="login-card card">
         <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
         <span className="eyebrow">Campus placement command center</span>
         <h1>{mode === "signin" ? "Login and run the full workflow." : "Create a student account."}</h1>
@@ -694,26 +705,36 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
           <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
           <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
         </div>
-        {mode === "signin" && <div className="demo-buttons">
-          {demoAccounts.map((account) => <button key={account.email} type="button" onClick={() => { setEmail(account.email); setPassword(account.password); }}>{account.label}</button>)}
+        {mode === "signin" && <div className="demo-buttons" style={{ marginTop: "8px" }}>
+          {demoAccounts.map((account) => (
+            <span
+              key={account.email}
+              className="demo-btn-capsule"
+              onClick={() => { setEmail(account.email); setPassword(account.password); }}
+            >
+              {account.label}
+            </span>
+          ))}
         </div>}
-        {mode === "signup" && <>
-          <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <label>Branch
-            <select value={branch} onChange={(event) => setBranch(event.target.value)}>
-              {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-            </select>
-          </label>
-          <label>CGPA<input value={cgpa} onChange={(event) => setCgpa(event.target.value)} /></label>
-          <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
-        </>}
-        <label style={{ marginTop: "8px" }}>Email<input value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
-        <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
-        <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
-          {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
-        </button>
-        <button className="ghost-button" type="button" onClick={onToggleTheme}>{dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme</button>
-      </form>
+        <form autoComplete="off" style={{ display: "grid", gap: "16px", marginTop: "8px" }} onSubmit={(event) => { event.preventDefault(); submitAuth(); }}>
+          {mode === "signup" && <>
+            <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
+            <label>Branch
+              <select value={branch} onChange={(event) => setBranch(event.target.value)}>
+                {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+              </select>
+            </label>
+            <label>CGPA<input value={cgpa} onChange={(event) => setCgpa(event.target.value)} /></label>
+            <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
+          </>}
+          <label>Email<input value={email} autoComplete="new-password" onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <label>Password<input type="password" value={password} autoComplete="new-password" onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <button className="primary-button" disabled={loading} type="submit">
+            {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
+          </button>
+          <button className="ghost-button" type="button" onClick={onToggleTheme}>{dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme</button>
+        </form>
+      </div>
     </main>
   );
 }
@@ -842,30 +863,15 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
       setLoading(false);
     }
   };
-  const upload = async (file?: File) => {
-    if (!file) return;
-    const form = new FormData();
-    form.set("resume", file);
-    setLoading(true);
-    try {
-      setResult(await api("/api/ai/resume/upload", token, { method: "POST", body: form }));
-      flash("Resume file analyzed");
-    } catch (error) {
-      flash(error instanceof Error ? error.message : "Upload failed");
-    } finally {
-      setLoading(false);
-    }
-  };
   return (
     <section className="analyzer-grid">
       <div>
         <span className="eyebrow"><FileScan size={15} /> Resume AI</span>
-        <h2>Analyze text or upload a local PDF.</h2>
-        <p className="section-copy">The backend stores analysis history and uses Gemini when configured, with a safe offline fallback.</p>
+        <h2>Analyze text resume.</h2>
+        <p className="section-copy">Paste your resume text below to run the AI placement matching analysis.</p>
         <textarea value={text} onChange={(event) => setText(event.target.value)} />
         <div className="inline-actions">
           <button className="primary-button" onClick={analyze} disabled={loading}>{loading ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />} Analyze text</button>
-          <label className="upload-button"><Upload size={16} /> Upload PDF<input type="file" accept=".pdf,.txt" onChange={(event) => upload(event.target.files?.[0])} /></label>
         </div>
       </div>
       <AnalysisPanel result={result} />

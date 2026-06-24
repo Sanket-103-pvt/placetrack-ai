@@ -60,7 +60,10 @@ function cleanJsonResponse(text: string): string {
 async function callGemini(prompt: string) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
-  const model = process.env.GEMINI_MODEL ?? "gemini-1.5-flash";
+  let model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+  if (model === "gemini-1.5-flash") {
+    model = "gemini-2.0-flash";
+  }
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

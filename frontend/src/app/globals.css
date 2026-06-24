@@ -429,3 +429,24 @@ kbd { border: 1px solid var(--line); background: var(--panel); border-radius: 6p
   border-color: #8c6cff;
   background: rgba(140, 108, 255, 0.05);
 }
+
+.demo-buttons span.demo-btn-capsule {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-size: 11px;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.demo-buttons span.demo-btn-capsule:hover {
+  background: var(--hover);
+  border-color: #8c6cff80;
+}
+
