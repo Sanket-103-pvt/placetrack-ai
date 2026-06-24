@@ -48,6 +48,15 @@ function normalizeResumeResponse(value: unknown, fallback: ReturnType<typeof ana
   };
 }
 
+function cleanJsonResponse(text: string): string {
+  let cleaned = text.trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```[a-zA-Z]*\n/, "");
+    cleaned = cleaned.replace(/\n```$/, "");
+  }
+  return cleaned.trim();
+}
+
 async function callGemini(prompt: string) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
@@ -63,7 +72,9 @@ async function callGemini(prompt: string) {
   if (!response.ok) throw new Error(`Gemini failed with ${response.status}`);
   const body = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
   const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
-  return text ? JSON.parse(text) : null;
+  if (!text) return null;
+  const cleanedText = cleanJsonResponse(text);
+  return JSON.parse(cleanedText);
 }
 
 export async function analyzeResumeTextSmart(text: string) {
@@ -125,3 +136,42 @@ export async function generateInterviewQuestionsSmart(role = "software engineer"
     return fallback;
   }
 }
+
+export async function evaluateInterviewAnswerSmart(question: string, answer: string, role: string) {
+  const fallback = {
+    score: answer.trim().length > 50 ? 7 : answer.trim().length > 20 ? 5 : 3,
+    strengths: ["Provided a relevant response", "Communicated key ideas"],
+    weaknesses: ["Could provide more specific details or industry terminology"],
+    modelAnswer: "A high-quality response should clearly address the core question using specific technical terms, structured explanation (e.g., STAR method for behavioral), and mention best practices or real-world application."
+  };
+
+  try {
+    const prompt = `You are an expert technical interviewer evaluating a student candidate for a ${role} position.
+Evaluate their answer to the interview question below.
+
+Question: ${question}
+Candidate's Answer: ${answer}
+
+Evaluate and return a strict JSON response ONLY. Do not wrap in extra explanation or markdown blocks outside valid JSON.
+JSON keys required:
+- score: number from 1 to 10
+- strengths: array of strings containing strengths of the answer
+- weaknesses: array of strings containing weaknesses or areas of improvement
+- modelAnswer: string containing a high-quality model response for this question
+
+Response:`;
+
+    const result = await callGemini(prompt);
+    if (!result) return fallback;
+
+    return {
+      score: typeof result.score === "number" ? Math.max(1, Math.min(10, Math.round(result.score))) : fallback.score,
+      strengths: Array.isArray(result.strengths) ? result.strengths.map(String) : fallback.strengths,
+      weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses.map(String) : fallback.weaknesses,
+      modelAnswer: typeof result.modelAnswer === "string" ? result.modelAnswer : fallback.modelAnswer
+    };
+  } catch {
+    return fallback;
+  }
+}
+

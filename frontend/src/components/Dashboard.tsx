@@ -17,7 +17,7 @@ type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptit
 
 type Drive = {
   id: string;
-  company: { name: string; website?: string | null };
+  company: { name: string; website?: string | null; description?: string | null };
   role: string;
   package: number;
   location: string;
@@ -28,6 +28,8 @@ type Drive = {
   eligibility?: { eligible: boolean; score: number; reasons: string[] } | null;
   alreadyApplied?: boolean;
   _count?: { applications: number };
+  description?: string;
+  maxBacklogs?: number;
 };
 
 type Application = {
@@ -48,6 +50,22 @@ type TestSummary = {
 };
 
 type DashboardData = Record<string, unknown>;
+
+const AVAILABLE_DEPARTMENTS = [
+  "Computer Engineering",
+  "Information Technology",
+  "AI & Data Science",
+  "E&TC",
+  "Electrical",
+  "Mechanical",
+  "Civil"
+];
+
+const AVAILABLE_SKILLS = [
+  "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express", "Python",
+  "Java", "C++", "SQL", "PostgreSQL", "MongoDB", "AWS", "Docker", "Git",
+  "Machine Learning", "Data Structures", "Algorithms", "Communication"
+];
 
 const statusOptions = ["APPLIED", "SHORTLISTED", "APTITUDE_CLEARED", "TECHNICAL_ROUND", "HR_ROUND", "SELECTED", "REJECTED"];
 const navIcons: Record<View, ElementType> = {
@@ -99,6 +117,8 @@ export function Dashboard() {
   const [tests, setTests] = useState<TestSummary[]>([]);
   const [loading, setLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDrive, setSelectedDrive] = useState<Drive | null>(null);
 
   const role = user?.role ?? "STUDENT";
   const nav = useMemo(() => {
@@ -223,6 +243,35 @@ export function Dashboard() {
     writeStorage("placetrack-user", JSON.stringify(freshUser));
   };
 
+  // Client-side search filters
+  const filteredDrives = useMemo(() => {
+    if (!searchQuery) return drives;
+    const q = searchQuery.toLowerCase();
+    return drives.filter((d) =>
+      d.company.name.toLowerCase().includes(q) ||
+      d.role.toLowerCase().includes(q) ||
+      d.location.toLowerCase().includes(q)
+    );
+  }, [drives, searchQuery]);
+
+  const filteredApplications = useMemo(() => {
+    if (!searchQuery) return applications;
+    const q = searchQuery.toLowerCase();
+    return applications.filter((a) =>
+      a.drive.company.name.toLowerCase().includes(q) ||
+      a.drive.role.toLowerCase().includes(q) ||
+      (a.student?.name || "").toLowerCase().includes(q)
+    );
+  }, [applications, searchQuery]);
+
+  const filteredTests = useMemo(() => {
+    if (!searchQuery) return tests;
+    const q = searchQuery.toLowerCase();
+    return tests.filter((t) =>
+      t.title.toLowerCase().includes(q)
+    );
+  }, [tests, searchQuery]);
+
   if (!user || !token) {
     return <LoginScreen dark={dark} loading={loading} onToggleTheme={() => setDark(!dark)} onLogin={handleLogin} onSignup={handleSignup} />;
   }
@@ -255,14 +304,21 @@ export function Dashboard() {
         </nav>
         <div className="sidebar-bottom">
           <button onClick={logout}><LogOut size={18} /> Logout</button>
-          <div className="tip"><div><Target size={18} /></div><strong>Live API mode</strong><span>{loading ? "Syncing data" : "Backend connected"}</span><progress value={loading ? 1 : 5} max="5" /></div>
         </div>
       </aside>
 
       <section className="workspace">
         <header>
           <button className="menu-button" onClick={() => setMenuOpen(true)}><Menu /></button>
-          <div className="search"><Search size={17} /><input placeholder="Search drives, companies, tests..." /><kbd>API</kbd></div>
+          <div className="search">
+            <Search size={17} />
+            <input
+              placeholder="Search drives, companies, tests..."
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+            <kbd>API</kbd>
+          </div>
           <div className="header-actions">
             <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <Bell size={18} />}</button>
             <button onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
@@ -272,11 +328,11 @@ export function Dashboard() {
 
         <AnimatePresence mode="wait">
           <motion.div className="content" key={view} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .22 }}>
-            {view === "Overview" && <Overview role={role} name={name} dashboard={dashboard} applications={applications} drives={drives} onNavigate={setView} />}
-            {view === "Applications" && <Applications role={role} token={token} applications={applications} onRefresh={() => refreshAll()} flash={flash} />}
-            {view === "Opportunities" && <Opportunities role={role} token={token} drives={drives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} />}
+            {view === "Overview" && <Overview role={role} name={name} dashboard={dashboard} applications={filteredApplications} drives={filteredDrives} onNavigate={setView} />}
+            {view === "Applications" && <Applications role={role} token={token} applications={filteredApplications} onRefresh={() => refreshAll()} flash={flash} />}
+            {view === "Opportunities" && <Opportunities role={role} token={token} drives={filteredDrives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} onViewDrive={setSelectedDrive} />}
             {view === "Resume AI" && <ResumeAI token={token} flash={flash} />}
-            {view === "Aptitude" && <Aptitude token={token} role={role} tests={tests} flash={flash} />}
+            {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} />}
             {view === "Interview" && <InterviewCoach token={token} applications={applications} flash={flash} />}
             {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} />}
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} />}
@@ -285,8 +341,153 @@ export function Dashboard() {
         </AnimatePresence>
       </section>
       {profileOpen && <ProfileModal user={user} token={token} onClose={() => setProfileOpen(false)} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} />}
+      {selectedDrive && <DriveDetailsModal drive={selectedDrive} role={role} token={token} onClose={() => setSelectedDrive(null)} onApplied={() => { refreshAll(); setSelectedDrive(null); }} flash={flash} />}
       {menuOpen && <div className="scrim" onClick={() => setMenuOpen(false)} />}
     </main>
+  );
+}
+
+function SkillsSelector({ selected, onChange }: { selected: string[]; onChange: (skills: string[]) => void }) {
+  const toggleSkill = (skill: string) => {
+    if (selected.includes(skill)) {
+      onChange(selected.filter((s) => s !== skill));
+    } else {
+      onChange([...selected, skill]);
+    }
+  };
+
+  return (
+    <div className="skills-selector">
+      <span>Skills (click to toggle)</span>
+      <div className="skills-tags">
+        {AVAILABLE_SKILLS.map((skill) => {
+          const active = selected.includes(skill);
+          return (
+            <button
+              key={skill}
+              type="button"
+              className={active ? "skill-tag active" : "skill-tag"}
+              onClick={() => toggleSkill(skill)}
+            >
+              {skill}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
+  drive: Drive;
+  role: Role;
+  token: string;
+  onClose: () => void;
+  onApplied: () => void;
+  flash: (message: string) => void;
+}) {
+  const [applying, setApplying] = useState(false);
+  const apply = async () => {
+    setApplying(true);
+    try {
+      await api("/api/applications", token, { method: "POST", body: JSON.stringify({ driveId: drive.id }) });
+      flash("Application submitted successfully!");
+      onApplied();
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not submit application");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const isEligible = drive.eligibility?.eligible !== false;
+  const matchScore = drive.eligibility?.score ?? drive._count?.applications ?? 0;
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="card drive-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="drive-modal-header">
+          <div className="drive-modal-company-info">
+            <div className="company-logo large">{initials(drive.company.name)}</div>
+            <div>
+              <h2>{drive.company.name}</h2>
+              <p>{drive.role}</p>
+            </div>
+          </div>
+          <button className="drive-modal-close-btn" onClick={onClose} aria-label="Close modal"><X size={16} /></button>
+        </div>
+
+        <div className={isEligible ? "drive-eligibility-card" : "drive-eligibility-card ineligible"}>
+          <div className="drive-eligibility-header">
+            <div>
+              <span className="card-kicker">Match Score & Eligibility</span>
+              <h3 style={{ margin: "4px 0 0" }}>Signal Score: {matchScore}%</h3>
+            </div>
+            <span className={isEligible ? "drive-eligibility-status eligible" : "drive-eligibility-status ineligible"}>
+              {isEligible ? "Eligible" : "Not Eligible"}
+            </span>
+          </div>
+          {!isEligible && drive.eligibility?.reasons && (
+            <p className="warning" style={{ margin: "4px 0 0" }}>
+              {drive.eligibility.reasons.join(", ")}
+            </p>
+          )}
+        </div>
+
+        <div className="drive-details-grid">
+          <div className="drive-detail-section">
+            <h4>Package</h4>
+            <p>Rs {drive.package} LPA</p>
+          </div>
+          <div className="drive-detail-section">
+            <h4>Location</h4>
+            <p>{drive.location}</p>
+          </div>
+          <div className="drive-detail-section">
+            <h4>Min CGPA</h4>
+            <p>{drive.minCgpa}</p>
+          </div>
+          <div className="drive-detail-section">
+            <h4>Allowed Branches</h4>
+            <p>{drive.allowedBranches.join(", ")}</p>
+          </div>
+          <div className="drive-detail-section">
+            <h4>Deadline</h4>
+            <p>{new Date(drive.deadline).toLocaleDateString()}</p>
+          </div>
+          <div className="drive-detail-section">
+            <h4>Job Type</h4>
+            <p>{drive.jobType}</p>
+          </div>
+        </div>
+
+        <div className="drive-detail-section">
+          <h4>Job Description</h4>
+          <div className="drive-description-box">
+            {drive.description || "No detailed description available."}
+          </div>
+        </div>
+
+        <div className="inline-actions" style={{ marginTop: "8px" }}>
+          {role === "STUDENT" && drive.alreadyApplied ? (
+            <button className="secondary-button" disabled style={{ width: "100%" }}>
+              Already applied <CheckCircle2 size={15} />
+            </button>
+          ) : role === "STUDENT" ? (
+            <button
+              className="primary-button"
+              disabled={!isEligible || applying}
+              onClick={apply}
+              style={{ width: "100%", padding: "12px" }}
+            >
+              {applying ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} Apply Now
+            </button>
+          ) : (
+            <p className="helper-text">Coordinator / admin accounts can monitor this drive via the applications panel.</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -303,9 +504,9 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
     branch: student?.branch ?? "Computer Engineering",
     cgpa: String(student?.cgpa ?? 7),
     graduationYear: String(student?.graduationYear ?? 2027),
-    skills: student?.skills?.join(", ") ?? "Java, Python, SQL",
     backlogs: String(student?.backlogs ?? 0)
   });
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -322,7 +523,7 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
           branch: form.branch,
           cgpa: Number(form.cgpa),
           graduationYear: Number(form.graduationYear),
-          skills: form.skills.split(",").map((item) => item.trim()).filter(Boolean),
+          skills: selectedSkills,
           backlogs: Number(form.backlogs)
         })
       });
@@ -346,9 +547,18 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
         {student && <>
           <p className="section-copy">Update CGPA, branch, skills, or backlog count whenever your profile improves. Dashboard readiness will refresh after saving.</p>
           <div className="profile-form">
-            {Object.entries(form).map(([key, value]) => <label key={key}>{key}<input value={value} onChange={(event) => setForm((old) => ({ ...old, [key]: event.target.value }))} /></label>)}
+            <label>Name<input value={form.name} onChange={(event) => setForm((old) => ({ ...old, name: event.target.value }))} /></label>
+            <label>Branch
+              <select value={form.branch} onChange={(event) => setForm((old) => ({ ...old, branch: event.target.value }))}>
+                {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+              </select>
+            </label>
+            <label>CGPA<input value={form.cgpa} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
+            <label>Graduation Year<input value={form.graduationYear} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
+            <label>Backlogs<input value={form.backlogs} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
+            <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
           </div>
-          <div className="inline-actions">
+          <div className="inline-actions" style={{ marginTop: "24px" }}>
             <button className="primary-button" onClick={save} disabled={saving}>{saving ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} Save profile</button>
             <button className="ghost-button" onClick={onClose}>Cancel</button>
           </div>
@@ -384,9 +594,9 @@ function ProfileEditor({ user, token, onSaved, flash }: {
     branch: student?.branch ?? "Computer Engineering",
     cgpa: String(student?.cgpa ?? 7),
     graduationYear: String(student?.graduationYear ?? 2027),
-    skills: student?.skills?.join(", ") ?? "Java, Python, SQL",
     backlogs: String(student?.backlogs ?? 0)
   });
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
@@ -403,7 +613,7 @@ function ProfileEditor({ user, token, onSaved, flash }: {
           branch: form.branch,
           cgpa: Number(form.cgpa),
           graduationYear: Number(form.graduationYear),
-          skills: form.skills.split(",").map((item) => item.trim()).filter(Boolean),
+          skills: selectedSkills,
           backlogs: Number(form.backlogs)
         })
       });
@@ -426,13 +636,22 @@ function ProfileEditor({ user, token, onSaved, flash }: {
         <div>
           <span className="card-kicker">Student readiness profile</span>
           <h3>{form.name}</h3>
-          <p>{form.branch} · CGPA {form.cgpa} · {form.skills.split(",").filter(Boolean).length} skills</p>
+          <p>{form.branch} · CGPA {form.cgpa} · {selectedSkills.length} skills</p>
         </div>
       </div>
       <div className="profile-form">
-        {Object.entries(form).map(([key, value]) => <label key={key}>{key}<input value={value} onChange={(event) => setForm((old) => ({ ...old, [key]: event.target.value }))} /></label>)}
+        <label>Name<input value={form.name} onChange={(event) => setForm((old) => ({ ...old, name: event.target.value }))} /></label>
+        <label>Branch
+          <select value={form.branch} onChange={(event) => setForm((old) => ({ ...old, branch: event.target.value }))}>
+            {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+          </select>
+        </label>
+        <label>CGPA<input value={form.cgpa} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
+        <label>Graduation Year<input value={form.graduationYear} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
+        <label>Backlogs<input value={form.backlogs} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
+        <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
       </div>
-      <div className="inline-actions">
+      <div className="inline-actions" style={{ marginTop: "24px" }}>
         <button className="primary-button" onClick={save} disabled={saving}>{saving ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} Save profile</button>
         <span className="helper-text">Tip: add hackathons, certifications, internships, and stack keywords to improve matching.</span>
       </div>
@@ -448,15 +667,22 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
   onSignup: (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[] }) => void;
 }) {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [email, setEmail] = useState(demoAccounts[0].email);
-  const [password, setPassword] = useState(demoAccounts[0].password);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("New KK Wagh Student");
   const [branch, setBranch] = useState("Computer Engineering");
   const [cgpa, setCgpa] = useState("7.8");
-  const [skills, setSkills] = useState("Java, Python, SQL, Communication");
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(["Java", "Python", "SQL", "Communication"]);
+
+  useEffect(() => {
+    setEmail("");
+    setPassword("");
+  }, [mode]);
+
   const submitAuth = () => mode === "signin"
     ? onLogin(email, password)
-    : onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: skills.split(",").map((item) => item.trim()).filter(Boolean) });
+    : onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills });
+
   return (
     <main className={dark ? "app dark login-app" : "app light login-app"}>
       <form className="login-card card" onSubmit={(event) => { event.preventDefault(); submitAuth(); }}>
@@ -465,19 +691,23 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
         <h1>{mode === "signin" ? "Login and run the full workflow." : "Create a student account."}</h1>
         <p className="section-copy">{mode === "signin" ? "Use demo accounts after seeding. Student, coordinator, and admin roles unlock different placement modules." : "Signup creates a student profile and logs you in instantly."}</p>
         <div className="auth-tabs">
-          <button className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
-          <button className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
+          <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
+          <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
         </div>
         {mode === "signin" && <div className="demo-buttons">
-          {demoAccounts.map((account) => <button key={account.email} onClick={() => { setEmail(account.email); setPassword(account.password); }}>{account.label}</button>)}
+          {demoAccounts.map((account) => <button key={account.email} type="button" onClick={() => { setEmail(account.email); setPassword(account.password); }}>{account.label}</button>)}
         </div>}
         {mode === "signup" && <>
           <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
-          <label>Branch<input value={branch} onChange={(event) => setBranch(event.target.value)} /></label>
+          <label>Branch
+            <select value={branch} onChange={(event) => setBranch(event.target.value)}>
+              {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+            </select>
+          </label>
           <label>CGPA<input value={cgpa} onChange={(event) => setCgpa(event.target.value)} /></label>
-          <label>Skills<input value={skills} onChange={(event) => setSkills(event.target.value)} /></label>
+          <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
         </>}
-        <label>Email<input value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+        <label style={{ marginTop: "8px" }}>Email<input value={email} onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
         <label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
         <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
           {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
@@ -569,20 +799,12 @@ function Applications({ role, token, applications, onRefresh, flash }: { role: R
   );
 }
 
-function Opportunities({ role, token, drives, onRefresh, onNavigate, flash }: { role: Role; token: string; drives: Drive[]; onRefresh: () => void; onNavigate: (view: View) => void; flash: (message: string) => void }) {
+function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onViewDrive }: { role: Role; token: string; drives: Drive[]; onRefresh: () => void; onNavigate: (view: View) => void; flash: (message: string) => void; onViewDrive: (drive: Drive) => void }) {
   const sortedDrives = [...drives].sort((a, b) => {
     if (a.alreadyApplied !== b.alreadyApplied) return a.alreadyApplied ? 1 : -1;
     return (b.eligibility?.score ?? 0) - (a.eligibility?.score ?? 0);
   });
-  const apply = async (driveId: string) => {
-    try {
-      await api("/api/applications", token, { method: "POST", body: JSON.stringify({ driveId }) });
-      flash("Application submitted");
-      onRefresh();
-    } catch (error) {
-      flash(error instanceof Error ? error.message : "Could not apply");
-    }
-  };
+
   return (
     <>
       <PageTitle eyebrow="Matched opportunities" title="KK Wagh engineering placement profile." copy="Students can apply; coordinators can monitor demand and eligibility." />
@@ -598,7 +820,7 @@ function Opportunities({ role, token, drives, onRefresh, onNavigate, flash }: { 
             ? <button className="secondary-button" disabled>Already applied <CheckCircle2 size={15} /></button>
             : role === "STUDENT" && drive.eligibility?.eligible === false
             ? <button className="secondary-button" onClick={() => onNavigate("Profile")}>Update profile <ArrowUpRight size={15} /></button>
-            : <button className="primary-button" disabled={role !== "STUDENT"} onClick={() => apply(drive.id)}>View & apply <ArrowUpRight size={15} /></button>}
+            : <button className="primary-button" onClick={() => onViewDrive(drive)}>View & Apply <ArrowUpRight size={15} /></button>}
         </article>)}
       </div>
     </>
@@ -698,14 +920,48 @@ function Aptitude({ token, role, tests, flash }: { token: string; role: Role; te
 function InterviewCoach({ token, applications, flash }: { token: string; applications: Application[]; flash: (message: string) => void }) {
   const [role, setRole] = useState(applications[0]?.drive.role ?? "Software Engineer");
   const [questions, setQuestions] = useState<Array<{ question: string; difficulty: string; focus: string }>>([]);
+  const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [evaluations, setEvaluations] = useState<Record<string, { score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string }>>({});
+  const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
+
   const generate = async () => {
     try {
       setQuestions(await api("/api/ai/interview", token, { method: "POST", body: JSON.stringify({ role, count: 8 }) }));
+      setSelectedQuestion(null);
+      setEvaluations({});
+      setAnswers({});
       flash("Interview questions generated");
     } catch (error) {
       flash(error instanceof Error ? error.message : "Could not generate questions");
     }
   };
+
+  const submitAnswer = async (questionText: string) => {
+    const answer = answers[questionText]?.trim();
+    if (!answer) {
+      flash("Please type an answer before submitting.");
+      return;
+    }
+    setSubmitting((prev) => ({ ...prev, [questionText]: true }));
+    try {
+      const response = await api<{ score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string }>(
+        "/api/ai/interview/feedback",
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({ question: questionText, answer, role })
+        }
+      );
+      setEvaluations((prev) => ({ ...prev, [questionText]: response }));
+      flash("Answer evaluated by AI!");
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Feedback generation failed");
+    } finally {
+      setSubmitting((prev) => ({ ...prev, [questionText]: false }));
+    }
+  };
+
   return (
     <>
       <PageTitle eyebrow="Interview coach" title="Generate role-specific practice questions." copy="Students use it for prep; coordinators can use it to design mock panels." />
@@ -714,7 +970,67 @@ function InterviewCoach({ token, applications, flash }: { token: string; applica
         <button className="primary-button" onClick={generate}><Sparkles size={16} /> Generate questions</button>
       </section>
       <div className="insight-list">
-        {questions.map((item, index) => <div className="card insight" key={item.question}><span>{String(index + 1).padStart(2, "0")}</span><div><strong>{item.question}</strong><p>{item.difficulty} · {item.focus}</p></div></div>)}
+        {questions.map((item, index) => {
+          const isSelected = selectedQuestion === item.question;
+          const evaluation = evaluations[item.question];
+          const isSubmitting = submitting[item.question] || false;
+
+          return (
+            <div
+              className={`card insight insight-row-clickable ${isSelected ? "selected-question" : ""}`}
+              key={item.question}
+              onClick={() => setSelectedQuestion(isSelected ? null : item.question)}
+            >
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <div style={{ width: "100%" }}>
+                <strong>{item.question}</strong>
+                <p>{item.difficulty} · {item.focus}</p>
+
+                {isSelected && (
+                  <div className="interview-practice-panel" onClick={(e) => e.stopPropagation()}>
+                    <textarea
+                      placeholder="Type your answer to this question..."
+                      value={answers[item.question] || ""}
+                      onChange={(e) => setAnswers({ ...answers, [item.question]: e.target.value })}
+                    />
+                    <button
+                      className="primary-button"
+                      disabled={isSubmitting || !(answers[item.question]?.trim())}
+                      onClick={() => submitAnswer(item.question)}
+                    >
+                      {isSubmitting ? <Loader2 className="spin" size={16} /> : <Send size={16} />} Submit Answer for AI Evaluation
+                    </button>
+
+                    {evaluation && (
+                      <div className="interview-feedback-box">
+                        <div className="interview-feedback-header">
+                          <strong>AI Evaluation Feedback</strong>
+                          <span>Score: {evaluation.score}/10</span>
+                        </div>
+                        <div className="feedback-points-list strengths">
+                          <span>Strengths</span>
+                          <ul>
+                            {evaluation.strengths.map((str, idx) => <li key={idx}>{str}</li>)}
+                          </ul>
+                        </div>
+                        <div className="feedback-points-list weaknesses">
+                          <span>Areas for Improvement</span>
+                          <ul>
+                            {evaluation.weaknesses.map((weak, idx) => <li key={idx}>{weak}</li>)}
+                          </ul>
+                        </div>
+                        <div className="model-answer-section">
+                          <span>Model Answer Suggestion</span>
+                          <p>{evaluation.modelAnswer}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </>
   );
@@ -723,8 +1039,10 @@ function InterviewCoach({ token, applications, flash }: { token: string; applica
 function DriveCreator({ token, flash, onCreated }: { token: string; flash: (message: string) => void; onCreated: () => void }) {
   const [form, setForm] = useState({
     company: "Cognizant", role: "Graduate Trainee", package: "2.9", location: "Pune", minCgpa: "6.5",
-    branches: "CSE, IT, ECE", deadline: new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10)
+    deadline: new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10)
   });
+  const [allowedBranches, setAllowedBranches] = useState<string[]>(["Computer Engineering", "Information Technology"]);
+
   const create = async () => {
     try {
       await api("/api/drives", token, {
@@ -737,7 +1055,7 @@ function DriveCreator({ token, flash, onCreated }: { token: string; flash: (mess
           jobType: "Full-time",
           description: "Campus hiring drive created from coordinator dashboard.",
           minCgpa: Number(form.minCgpa),
-          allowedBranches: form.branches.split(",").map((item) => item.trim()).filter(Boolean),
+          allowedBranches: allowedBranches,
           maxBacklogs: 1,
           graduationYear: 2027,
           deadline: form.deadline,
@@ -750,12 +1068,46 @@ function DriveCreator({ token, flash, onCreated }: { token: string; flash: (mess
       flash(error instanceof Error ? error.message : "Drive creation failed");
     }
   };
+
   return (
     <>
       <PageTitle eyebrow="Coordinator tools" title="Create a new placement drive." copy="This posts directly to the backend and appears for eligible students." />
-      <section className="card form-card grid-form">
-        {Object.entries(form).map(([key, value]) => <label key={key}>{key}<input value={value} type={key === "deadline" ? "date" : "text"} onChange={(event) => setForm((old) => ({ ...old, [key]: event.target.value }))} /></label>)}
-        <button className="primary-button" onClick={create}><Plus size={16} /> Create drive</button>
+      <section className="card form-card">
+        <div className="grid-form">
+          <label>Company<input value={form.company} onChange={(e) => setForm(old => ({ ...old, company: e.target.value }))} /></label>
+          <label>Role<input value={form.role} onChange={(e) => setForm(old => ({ ...old, role: e.target.value }))} /></label>
+          <label>Package (LPA)<input value={form.package} onChange={(e) => setForm(old => ({ ...old, package: e.target.value }))} /></label>
+          <label>Location<input value={form.location} onChange={(e) => setForm(old => ({ ...old, location: e.target.value }))} /></label>
+          <label>Min CGPA<input value={form.minCgpa} onChange={(e) => setForm(old => ({ ...old, minCgpa: e.target.value }))} /></label>
+          <label>Deadline<input value={form.deadline} type="date" onChange={(e) => setForm(old => ({ ...old, deadline: e.target.value }))} /></label>
+        </div>
+        <div style={{ marginTop: "14px", display: "grid", gap: "8px" }}>
+          <span style={{ fontSize: "10px", color: "var(--muted)", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".11em" }}>Allowed Branches</span>
+          <div className="branch-checkbox-grid">
+            {AVAILABLE_DEPARTMENTS.map((dept) => {
+              const checked = allowedBranches.includes(dept);
+              return (
+                <label key={dept} className="branch-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      if (checked) {
+                        setAllowedBranches(allowedBranches.filter((b) => b !== dept));
+                      } else {
+                        setAllowedBranches([...allowedBranches, dept]);
+                      }
+                    }}
+                  />
+                  {dept}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+        <button className="primary-button" style={{ marginTop: "20px" }} onClick={create}>
+          <Plus size={16} /> Create drive
+        </button>
       </section>
     </>
   );

@@ -10,6 +10,7 @@ button:disabled { cursor: not-allowed; opacity: .55; }
 .app {
   --bg: #0d0d13; --panel: #15151d; --panel-2: #1b1b25; --text: #f5f3fb; --muted: #8f8d9c;
   --line: rgba(255,255,255,.08); --hover: rgba(255,255,255,.045); --sidebar: #111118;
+  --violet: #8c6cff;
   min-height: 100vh; color: var(--text); background: var(--bg); display: flex; transition: color .25s, background .25s;
 }
 .app.light {
@@ -129,3 +130,302 @@ kbd { border: 1px solid var(--line); background: var(--panel); border-radius: 6p
 @media(max-width:1050px){.hero-grid,.mid-grid,.analytics-grid{grid-template-columns:1fr}.analytics-stats{grid-template-columns:1fr 1fr}.upcoming-card{min-height:220px}}
 @media(max-width:760px){.sidebar{transform:translateX(-102%);transition:.25s;width:260px}.sidebar.open{transform:translateX(0)}.mobile-close{display:grid;position:absolute;right:12px;top:12px}.workspace{margin-left:0;width:100%}.menu-button{display:grid}.scrim{display:block;position:fixed;inset:0;background:#0008;z-index:15}.content{padding:28px 18px 50px}header{padding:0 18px}.search{display:none}.page-title{align-items:flex-start}.date-pill{display:none}.hero-grid,.opportunity-grid,.analyzer-grid,.split-grid,.grid-form,.profile-form{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}.readiness-body{gap:15px}.readiness-ring{width:125px}.application-row{grid-template-columns:36px 1fr auto}.application-row .date{display:none}.application-detail-head{grid-template-columns:46px 1fr auto}.application-detail-head>.status-badge{display:none}.deadline{grid-column:3}.analytics-stats{grid-template-columns:1fr 1fr}.timeline-step span{display:none}}
 @media(max-width:440px){.stats-grid,.analytics-stats{grid-template-columns:1fr}.readiness-body{align-items:flex-start}.score-breakdown{margin-top:8px}.page-title h1{font-size:27px}.application-detail{padding:18px}.job-meta{flex-wrap:wrap}}
+
+/* Custom interactive UI elements */
+.skills-selector {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+.skills-selector > span {
+  color: var(--muted);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .11em;
+  font-weight: 800;
+}
+.skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 12px;
+}
+.skill-tag {
+  background: var(--hover);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border-style: solid;
+}
+.skill-tag:hover {
+  border-color: #8c6cff60;
+  background: rgba(255, 255, 255, 0.06);
+}
+.skill-tag.active {
+  background: linear-gradient(135deg, #8063ef, #6848db);
+  border-color: #8c6cff;
+  color: white;
+  box-shadow: 0 4px 12px rgba(109, 77, 229, 0.25);
+}
+
+.branch-checkbox-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 12px;
+  border-radius: 12px;
+  margin-top: 6px;
+}
+.branch-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.branch-checkbox-label input {
+  width: auto;
+  accent-color: #8c6cff;
+  margin: 0;
+}
+
+/* Drive Details Modal styling */
+.drive-modal-content {
+  width: min(720px, 100%);
+  max-height: min(850px, 92vh);
+  overflow: auto;
+  padding: 28px;
+  box-shadow: 0 28px 90px #0009;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.drive-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 16px;
+}
+.drive-modal-company-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.drive-modal-company-info h2 {
+  font: 800 24px "Manrope";
+  margin: 0;
+  line-height: 1.2;
+}
+.drive-modal-company-info p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 4px 0 0;
+}
+.drive-modal-close-btn {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+}
+.drive-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+.drive-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.drive-detail-section h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 0;
+  font-weight: 700;
+}
+.drive-detail-section p {
+  font-size: 13px;
+  margin: 0;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.drive-description-box {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.drive-eligibility-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(140, 108, 255, 0.05);
+}
+.drive-eligibility-card.ineligible {
+  background: rgba(255, 106, 125, 0.05);
+  border-color: rgba(255, 106, 125, 0.2);
+}
+.drive-eligibility-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.drive-eligibility-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.drive-eligibility-status.eligible {
+  color: #4ed2b5;
+  background: rgba(78, 210, 181, 0.12);
+  border: 1px solid rgba(78, 210, 181, 0.2);
+}
+.drive-eligibility-status.ineligible {
+  color: #ff6a7d;
+  background: rgba(255, 106, 125, 0.12);
+  border: 1px solid rgba(255, 106, 125, 0.2);
+}
+
+/* Interview feedback coach layout */
+.interview-practice-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.interview-practice-panel textarea {
+  width: 100%;
+  height: 140px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text);
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  outline: none;
+}
+.interview-practice-panel textarea:focus {
+  border-color: #8c6cff80;
+}
+.interview-feedback-box {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+.interview-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.interview-feedback-header strong {
+  font-size: 14px;
+  color: #a291ff;
+}
+.interview-feedback-header span {
+  background: #8c6cff24;
+  color: #bfa5ff;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.feedback-points-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.feedback-points-list span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.feedback-points-list ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.feedback-points-list li {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.feedback-points-list.strengths li {
+  color: #4ed2b5;
+}
+.feedback-points-list.weaknesses li {
+  color: #ffb454;
+}
+.model-answer-section {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.model-answer-section span {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.model-answer-section p {
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  color: var(--text);
+  font-style: italic;
+}
+.insight-row-clickable {
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+.insight-row-clickable:hover {
+  background: var(--hover);
+  border-color: #8c6cff40;
+}
+.insight-row-clickable.selected-question {
+  border-color: #8c6cff;
+  background: rgba(140, 108, 255, 0.05);
+}
