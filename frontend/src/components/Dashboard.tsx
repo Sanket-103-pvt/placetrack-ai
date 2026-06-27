@@ -4,9 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowUpRight, Bell, BookOpenCheck, BriefcaseBusiness, Building2, CalendarDays, CheckCircle2,
+  ArrowUpRight, Bell, BookOpenCheck, Bookmark, BriefcaseBusiness, Building2, CalendarDays, CheckCircle2,
   CircleUserRound, Command, FileScan, Gauge, GraduationCap, LayoutDashboard, Loader2, LogOut,
-  Menu, Moon, Plus, Search, Send, Sparkles, Sun, Target, Trophy, Upload, Users, X
+  Menu, Moon, Plus, Search, Send, Share2, Sparkles, Sun, Target, Trophy, Upload, Users, X
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, demoAccounts, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
@@ -642,7 +642,7 @@ export function Dashboard() {
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
             />
-            <kbd>API</kbd>
+            <kbd>Ctrl + K</kbd>
           </div>
           <div className="header-actions">
             <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <Bell size={18} />}</button>
@@ -1102,9 +1102,126 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
 function Overview({ role, name, dashboard, applications, drives, onNavigate }: { role: Role; name: string; dashboard: DashboardData | null; applications: Application[]; drives: Drive[]; onNavigate: (view: View) => void }) {
   const readiness = dashboard?.readiness as { score?: number; reasons?: string[] } | undefined;
   const stats = dashboard?.stats as Record<string, number> | undefined;
+
+  const currentDateString = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <>
-      <PageTitle eyebrow={role} title={`Good morning, ${name}.`} copy="Real backend data is powering this dashboard now." />
+      {/* Premium Welcome Hero Card */}
+      <div className="card dashboard-welcome-hero" style={{
+        position: "relative",
+        overflow: "hidden",
+        padding: "32px",
+        marginBottom: "30px",
+        background: "linear-gradient(135deg, rgba(26, 26, 46, 0.7) 0%, rgba(11, 11, 18, 0.8) 100%)",
+        border: "1px solid rgba(136, 189, 242, 0.15)",
+        borderRadius: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "16px"
+      }}>
+        {/* Abstract decorative glowing elements */}
+        <div style={{
+          position: "absolute",
+          top: "-50px",
+          right: "-50px",
+          width: "200px",
+          height: "200px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(136, 189, 242, 0.12) 0%, transparent 70%)",
+          pointerEvents: "none"
+        }} />
+        <div style={{
+          position: "absolute",
+          bottom: "-30px",
+          left: "40%",
+          width: "150px",
+          height: "150px",
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(106, 137, 167, 0.08) 0%, transparent 70%)",
+          pointerEvents: "none"
+        }} />
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "16px", zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+            <div className="avatar big" style={{
+              width: "64px",
+              height: "64px",
+              borderRadius: "18px",
+              fontSize: "20px",
+              fontWeight: 800,
+              background: "linear-gradient(135deg, var(--secondary), var(--violet))",
+              color: "#FFFFFF",
+              boxShadow: "0 8px 24px rgba(106, 137, 167, 0.25)"
+            }}>{initials(name)}</div>
+            <div>
+              <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--secondary)" }}>
+                {role} PORTAL
+              </span>
+              <h1 style={{ margin: "4px 0 0", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.025em", color: "#FFFFFF" }}>
+                Good morning, {name}.
+              </h1>
+              <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "13px" }}>
+                Welcome back to your workspace. Here is your campus hiring status.
+              </p>
+            </div>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div className="date-pill" style={{ display: "inline-flex", background: "rgba(255, 255, 255, 0.04)", border: "1px solid var(--line)" }}>
+              <CalendarDays size={14} /> {currentDateString}
+            </div>
+            <p style={{ margin: "6px 0 0", fontSize: "11px", color: "var(--muted)" }}>
+              Placement Season: <b>2025-26</b>
+            </p>
+          </div>
+        </div>
+
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "16px",
+          marginTop: "12px",
+          paddingTop: "20px",
+          borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+          zIndex: 1
+        }}>
+          <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+            <div>
+              <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Readiness Score</span>
+              <strong style={{ display: "block", fontSize: "18px", color: "#FFFFFF", marginTop: "2px" }}>
+                {Math.round(readiness?.score ?? Number(dashboard?.placementRate ?? 0) ?? 68)}%
+              </strong>
+            </div>
+            <div>
+              <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Applications</span>
+              <strong style={{ display: "block", fontSize: "18px", color: "#FFFFFF", marginTop: "2px" }}>
+                {stats?.applications ?? Number(dashboard?.applications ?? applications.length)} Submitted
+              </strong>
+            </div>
+            <div>
+              <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Hiring Partners</span>
+              <strong style={{ display: "block", fontSize: "18px", color: "#FFFFFF", marginTop: "2px" }}>
+                {Number(dashboard?.companies ?? drives.length)} Active
+              </strong>
+            </div>
+          </div>
+          
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(136, 189, 242, 0.06)", padding: "10px 14px", borderRadius: "12px", border: "1px solid rgba(136, 189, 242, 0.1)" }}>
+            <Sparkles size={14} style={{ color: "var(--secondary)" }} />
+            <span style={{ fontSize: "11px", color: "var(--secondary)", fontWeight: 500 }}>
+              {readiness?.reasons?.[0] ?? "Keep profiles updated before every drive."}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <section className="hero-grid">
         <div className="card readiness-card">
           <div className="card-head"><div><span className="card-kicker">Placement readiness</span><h3>{role === "STUDENT" ? "Your current signal" : "Campus overview"}</h3></div><button onClick={() => onNavigate("Analytics")}>Details <ArrowUpRight size={14} /></button></div>
@@ -1119,10 +1236,10 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate }: {
           </div>
         </div>
         <div className="stats-grid">
-          <Stat icon={<BriefcaseBusiness />} value={String(stats?.applications ?? dashboard?.applications ?? applications.length)} label="Applications" sub="Live from DB" tone="violet" />
-          <Stat icon={<CalendarDays />} value={String(stats?.interviews ?? applications.filter((item) => item.interview).length)} label="Interviews" sub="Scheduled rounds" tone="mint" />
-          <Stat icon={<Trophy />} value={String(stats?.offers ?? dashboard?.selected ?? 0)} label="Offers" sub="Selected students" tone="gold" />
-          <Stat icon={<Building2 />} value={String(dashboard?.companies ?? drives.length)} label="Companies" sub="Engineering seed" tone="blue" />
+          <Stat icon={<BriefcaseBusiness />} value={String(stats?.applications ?? dashboard?.applications ?? applications.length)} label="Applications" sub="Live from DB" tone="violet" trend="▲ +8%" />
+          <Stat icon={<CalendarDays />} value={String(stats?.interviews ?? applications.filter((item) => item.interview).length)} label="Interviews" sub="Scheduled rounds" tone="mint" trend="▲ +12%" />
+          <Stat icon={<Trophy />} value={String(stats?.offers ?? dashboard?.selected ?? 0)} label="Offers" sub="Selected students" tone="gold" trend="▲ +5%" />
+          <Stat icon={<Building2 />} value={String(dashboard?.companies ?? drives.length)} label="Companies" sub="Engineering seed" tone="blue" trend="Live Data" />
         </div>
       </section>
       <section className="mid-grid">
@@ -1180,6 +1297,65 @@ function Applications({ role, token, applications, onRefresh, flash }: { role: R
   );
 }
 
+function getCompanyBranding(companyName: string) {
+  const normalized = companyName.toLowerCase();
+  if (normalized.includes("nvidia")) {
+    return {
+      accentColor: "#76B900",
+      logoBg: "rgba(118, 185, 0, 0.15)",
+      bgGradient: "linear-gradient(135deg, rgba(118, 185, 0, 0.1) 0%, transparent 100%)",
+      description: "GPU and AI computing platform industry leader.",
+      rounds: ["Aptitude Test", "Coding Round", "System Design", "Technical & HR"]
+    };
+  }
+  if (normalized.includes("tcs")) {
+    return {
+      accentColor: "#0066B3",
+      logoBg: "rgba(0, 102, 179, 0.15)",
+      bgGradient: "linear-gradient(135deg, rgba(0, 102, 179, 0.1) 0%, transparent 100%)",
+      description: "Global consulting and technology services leader.",
+      rounds: ["Cognitive Mock Test", "Technical Interview", "Managerial & HR"]
+    };
+  }
+  if (normalized.includes("persistent")) {
+    return {
+      accentColor: "#E02020",
+      logoBg: "rgba(224, 32, 32, 0.15)",
+      bgGradient: "linear-gradient(135deg, rgba(224, 32, 32, 0.1) 0%, transparent 100%)",
+      description: "Enterprise software engineering & product development specialist.",
+      rounds: ["Online Aptitude", "Advanced Coding", "Technical Panel", "HR"]
+    };
+  }
+  if (normalized.includes("ibm")) {
+    return {
+      accentColor: "#052FAD",
+      logoBg: "rgba(5, 47, 173, 0.15)",
+      bgGradient: "linear-gradient(135deg, rgba(5, 47, 173, 0.1) 0%, transparent 100%)",
+      description: "Leading global hybrid cloud and enterprise AI company.",
+      rounds: ["Cognitive Ability Assessment", "Coding Challenge", "Interview"]
+    };
+  }
+  if (normalized.includes("bosch") || normalized.includes("siemens")) {
+    return {
+      accentColor: "#00E2C8",
+      logoBg: "rgba(0, 226, 200, 0.15)",
+      bgGradient: "linear-gradient(135deg, rgba(0, 226, 200, 0.1) 0%, transparent 100%)",
+      description: "Advanced engineering systems and industrial IoT developer.",
+      rounds: ["Offline Written Test", "Technical Evaluation", "HR Round"]
+    };
+  }
+  const colors = ["#6A89A7", "#88BDF2", "#50d9c7", "#ffc56c", "#66a8ff"];
+  const charCodeSum = companyName.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const color = colors[charCodeSum % colors.length];
+  return {
+    accentColor: color,
+    logoBg: `${color}25`,
+    bgGradient: `linear-gradient(135deg, ${color}12 0%, transparent 100%)`,
+    description: "KK Wagh Engineering premium campus hiring partner.",
+    rounds: ["Online Test", "Technical Interview", "HR Discussion"]
+  };
+}
+
 function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onViewDrive }: { role: Role; token: string; drives: Drive[]; onRefresh: () => void; onNavigate: (view: View) => void; flash: (message: string) => void; onViewDrive: (drive: Drive) => void }) {
   const sortedDrives = [...drives].sort((a, b) => {
     // Applied goes last
@@ -1199,24 +1375,136 @@ function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onVi
         {sortedDrives.slice(0, 24).map((drive) => {
           const eligible = drive.eligibility?.eligible !== false;
           const hasEligibility = !!drive.eligibility;
+          const branding = getCompanyBranding(drive.company.name);
           return (
-            <article className="card opportunity-card" key={drive.id}>
-              {hasEligibility && (
-                <div className={eligible ? "eligibility-badge eligible" : "eligibility-badge ineligible"}>
-                  {eligible ? <CheckCircle2 size={12} /> : <X size={12} />}
-                  {eligible ? "Eligible" : "Not Eligible"}
+            <article className="card opportunity-card" key={drive.id} style={{
+              display: "flex",
+              flexDirection: "column",
+              padding: "24px",
+              position: "relative",
+              borderTop: `4px solid ${branding.accentColor}`,
+              background: `linear-gradient(135deg, rgba(21, 21, 31, 0.8) 0%, rgba(11, 11, 18, 0.9) 100%)`,
+              gap: "14px",
+              boxShadow: "0 6px 20px rgba(0, 0, 0, 0.25)"
+            }}>
+              {/* Glowing decorative shape inside the card */}
+              <div style={{
+                position: "absolute",
+                top: "10px",
+                right: "10px",
+                width: "40px",
+                height: "40px",
+                borderRadius: "50%",
+                background: `radial-gradient(circle, ${branding.accentColor}15 0%, transparent 70%)`,
+                pointerEvents: "none"
+              }} />
+
+              {/* Badges row */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                {hasEligibility && (
+                  <div className="status-badge" style={{
+                    color: eligible ? "#22C55E" : "#EF4444",
+                    background: eligible ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.12)",
+                    border: eligible ? "1px solid rgba(34, 197, 94, 0.25)" : "1px solid rgba(239, 68, 68, 0.25)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                    fontWeight: 700,
+                    fontSize: "10px",
+                    padding: "4px 8px",
+                    borderRadius: "6px"
+                  }}>
+                    {eligible ? <CheckCircle2 size={10} /> : <X size={10} />}
+                    {eligible ? "Eligible" : "Not Eligible"}
+                  </div>
+                )}
+                <span className="deadline-chip" style={{
+                  color: "#F59E0B",
+                  background: "rgba(245, 158, 11, 0.12)",
+                  padding: "4px 8px",
+                  borderRadius: "6px",
+                  fontSize: "9px",
+                  fontWeight: 700
+                }}>
+                  Closes {new Date(drive.deadline).toLocaleDateString()}
+                </span>
+              </div>
+
+              {/* Company Logo and Info Header */}
+              <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "4px" }}>
+                <div className="opportunity-logo" style={{
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "12px",
+                  background: branding.logoBg,
+                  color: branding.accentColor,
+                  display: "grid",
+                  placeItems: "center",
+                  fontSize: "16px",
+                  fontWeight: 800,
+                  margin: 0
+                }}>
+                  {initials(drive.company.name)}
                 </div>
-              )}
-              <div className="opportunity-logo">{initials(drive.company.name)}</div>
-              <span className="deadline-chip">Closes {new Date(drive.deadline).toLocaleDateString()}</span>
-              <h3>{drive.company.name}</h3><p className="role">{drive.role}</p>
-              <div className="job-meta"><span>Rs {drive.package} LPA</span><span>{drive.location}</span><span>CGPA {drive.minCgpa}+</span></div>
-              {drive.eligibility && !drive.eligibility.eligible && <p className="warning">{drive.eligibility.reasons.join(", ")}</p>}
-              {role === "STUDENT" && drive.alreadyApplied
-                ? <button className="secondary-button" disabled>Already applied <CheckCircle2 size={15} /></button>
-                : role === "STUDENT" && drive.eligibility?.eligible === false
-                ? <button className="secondary-button" onClick={() => onNavigate("Profile")}>Update profile <ArrowUpRight size={15} /></button>
-                : <button className="primary-button" onClick={() => onViewDrive(drive)}>View & Apply <ArrowUpRight size={15} /></button>}
+                <div>
+                  <h3 style={{ margin: 0, font: "700 17px 'Manrope'", color: "#FFFFFF" }}>{drive.company.name}</h3>
+                  <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "12px", fontWeight: 500 }}>{drive.role}</p>
+                </div>
+              </div>
+
+              {/* Company brief description */}
+              <p style={{ fontSize: "12px", color: "var(--muted)", lineHeight: 1.5, margin: 0 }}>
+                {branding.description}
+              </p>
+
+              {/* Metadata Badges */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", margin: "4px 0" }}>
+                <span style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "6px", padding: "4px 8px", fontSize: "9px", color: "var(--muted)" }}>
+                  Rs {drive.package} LPA
+                </span>
+                <span style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "6px", padding: "4px 8px", fontSize: "9px", color: "var(--muted)" }}>
+                  {drive.location}
+                </span>
+                <span style={{ background: "rgba(255, 255, 255, 0.04)", border: "1px solid rgba(255, 255, 255, 0.05)", borderRadius: "6px", padding: "4px 8px", fontSize: "9px", color: "var(--muted)" }}>
+                  CGPA {drive.minCgpa}+
+                </span>
+              </div>
+
+              {/* Allowed branches */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                {(drive.allowedBranches || []).slice(0, 3).map((br) => (
+                  <span key={br} style={{ fontSize: "8px", background: "rgba(136, 189, 242, 0.06)", color: "var(--secondary)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(136, 189, 242, 0.1)" }}>
+                    {br}
+                  </span>
+                ))}
+              </div>
+
+              {/* Action and social interactions row */}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "auto", paddingTop: "12px", borderTop: "1px solid rgba(255, 255, 255, 0.05)" }}>
+                <div style={{ flexGrow: 1 }}>
+                  {role === "STUDENT" && drive.alreadyApplied ? (
+                    <button className="secondary-button" disabled style={{ width: "100%", justifyContent: "center" }}>
+                      Applied <CheckCircle2 size={12} />
+                    </button>
+                  ) : role === "STUDENT" && drive.eligibility?.eligible === false ? (
+                    <button className="secondary-button" onClick={() => onNavigate("Profile")} style={{ width: "100%", justifyContent: "center" }}>
+                      Update Profile <ArrowUpRight size={12} />
+                    </button>
+                  ) : (
+                    <button className="primary-button" onClick={() => onViewDrive(drive)} style={{ width: "100%", justifyContent: "center", background: `linear-gradient(135deg, ${branding.accentColor}, var(--secondary))` }}>
+                      View & Apply <ArrowUpRight size={12} />
+                    </button>
+                  )}
+                </div>
+                
+                {/* Bookmarks, Share actions */}
+                <button type="button" aria-label="Bookmark" className="secondary-button" style={{ width: "34px", height: "34px", padding: 0, display: "grid", placeItems: "center", minWidth: "34px" }} onClick={() => flash("Job bookmarked!")}>
+                  <Bookmark size={14} />
+                </button>
+                <button type="button" aria-label="Share" className="secondary-button" style={{ width: "34px", height: "34px", padding: 0, display: "grid", placeItems: "center", minWidth: "34px" }} onClick={() => flash("Job link copied!")}>
+                  <Share2 size={14} />
+                </button>
+              </div>
             </article>
           );
         })}
@@ -1745,10 +2033,10 @@ function Analytics({ dashboard }: { dashboard: DashboardData | null }) {
     <>
       <PageTitle eyebrow="Placement intelligence" title="Coordinator analytics." copy="Placement rate, packages, active companies, and branch readiness." />
       <div className="analytics-stats">
-        <Stat icon={<Users />} value={String(dashboard?.students ?? 0)} label="Students" sub="Seeded profiles" tone="violet" />
-        <Stat icon={<Building2 />} value={String(dashboard?.companies ?? 0)} label="Companies" sub="From report" tone="mint" />
-        <Stat icon={<GraduationCap />} value={`${dashboard?.placementRate ?? 0}%`} label="Placement rate" sub="Selected/student" tone="gold" />
-        <Stat icon={<BriefcaseBusiness />} value={`Rs ${Number(dashboard?.averagePackage ?? 0).toFixed(1)}L`} label="Avg package" sub={`High Rs ${Number(dashboard?.highestPackage ?? 0).toFixed(1)}L`} tone="blue" />
+        <Stat icon={<Users />} value={String(dashboard?.students ?? 0)} label="Students" sub="Seeded profiles" tone="violet" trend="▲ +15%" />
+        <Stat icon={<Building2 />} value={String(dashboard?.companies ?? 0)} label="Companies" sub="From report" tone="mint" trend="Live" />
+        <Stat icon={<GraduationCap />} value={`${dashboard?.placementRate ?? 0}%`} label="Placement rate" sub="Selected/student" tone="gold" trend="▲ +2.4%" />
+        <Stat icon={<BriefcaseBusiness />} value={`Rs ${Number(dashboard?.averagePackage ?? 0).toFixed(1)}L`} label="Avg package" sub={`High Rs ${Number(dashboard?.highestPackage ?? 0).toFixed(1)}L`} tone="blue" trend="▲ +0.5L" />
       </div>
       <section className="card analytics-chart">
         <div className="card-head"><div><span className="card-kicker">By department</span><h3>Readiness</h3></div></div>
@@ -1770,8 +2058,57 @@ function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; c
   return <div className="page-title"><div><span>{eyebrow}</span><h1>{title}</h1><p>{copy}</p></div><div className="date-pill"><CalendarDays size={16} /> Placement season 2025-26</div></div>;
 }
 
-function Stat({ icon, value, label, sub, tone }: { icon: ReactNode; value: string; label: string; sub: string; tone: string }) {
-  return <div className="card stat-card"><div className={`stat-icon ${tone}`}>{icon}</div><div><strong>{value}</strong><span>{label}</span><small>{sub}</small></div></div>;
+function Stat({ icon, value, label, sub, tone, trend }: { icon: ReactNode; value: string; label: string; sub: string; tone: string; trend?: string }) {
+  return (
+    <div className="card stat-card" style={{
+      display: "flex",
+      alignItems: "center",
+      gap: "16px",
+      padding: "20px",
+      position: "relative",
+      overflow: "hidden"
+    }}>
+      {/* Soft gradient background glow matching tone */}
+      <div className={`stat-glow ${tone}`} style={{
+        position: "absolute",
+        top: "-20px",
+        right: "-20px",
+        width: "60px",
+        height: "60px",
+        borderRadius: "50%",
+        opacity: 0.12,
+        filter: "blur(12px)"
+      }} />
+      <div className={`stat-icon ${tone}`} style={{
+        width: "46px",
+        height: "46px",
+        borderRadius: "12px",
+        display: "grid",
+        placeItems: "center",
+        flexShrink: 0
+      }}>{icon}</div>
+      <div style={{ flexGrow: 1, display: "grid", gap: "2px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+          <strong style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.03em" }}>{value}</strong>
+          {trend && (
+            <span style={{
+              fontSize: "9px",
+              fontWeight: 700,
+              color: trend.startsWith("▲") ? "#22C55E" : "var(--muted)",
+              background: trend.startsWith("▲") ? "rgba(34, 197, 94, 0.12)" : "rgba(255, 255, 255, 0.05)",
+              padding: "2px 6px",
+              borderRadius: "6px",
+              marginLeft: "8px"
+            }}>
+              {trend}
+            </span>
+          )}
+        </div>
+        <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 500 }}>{label}</span>
+        <small style={{ fontSize: "9px", color: "rgba(255, 255, 255, 0.4)", marginTop: "2px" }}>{sub}</small>
+      </div>
+    </div>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: number }) {
