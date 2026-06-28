@@ -92,6 +92,15 @@ graph TD
   - Handles page-lock focus: checks and stores selected options on-the-fly.
   - Grades submissions server-side on route `POST /api/tests/:id/submit`, comparing choices against the database answer key, calculating accuracy percentages, identifying strength/weakness areas, and updating database tables `TestResult` and `Student` mock counts in a single transaction.
 
+### E. Premium Visual Redesign & Polish (Version 2)
+- **Concept**: A visual refresh of the entire application layout, bringing visual hierarchy and SaaS enterprise polish to the workspace.
+- **Design Specifications**:
+  - **Calm Blue Palette**: Uses Slate Blue (`#6A89A7`), Bright Sky Blue (`#88BDF2`), and Soft Sky Blue (`#BDDDFC`) systematically for branding actions.
+  - **Hero & Glassmorphic Highlights**: Features a Welcome Hero component with glowing radial backdrops, dynamic user initials, local date pills, and action statistics in a high-contrast layout.
+  - **Animated Radial Chart**: Rebuilds the static `ReadinessRing.tsx` score indicator to render radial progress tracks, SVG glow filters (`drop-shadow`), and color-coded status categorisations.
+  - **Company-specific Branding Cards**: Dynamically matches recruiter company names (e.g., NVIDIA, TCS, Persistent, IBM) to custom primary accent borders, description templates, logo background badges, and bookmark/share interactions.
+  - **Interactive Keyboard Shortcuts**: Updates search bar input fields to feature modern glass effects and an inline `Ctrl + K` / `Cmd + K` keyboard shortcut badge.
+
 ---
 
 ## 3. Structural Asset & Document Pipelines
