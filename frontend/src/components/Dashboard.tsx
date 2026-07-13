@@ -1646,52 +1646,138 @@ function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onVi
 }
 
 function ResumeAI({ token, flash }: { token: string; flash: (message: string) => void }) {
-  const [text, setText] = useState("Education: B.Sc Computer Science. Skills: JavaScript, React, Node.js, SQL, Docker. Projects: Built placement tracker used by 500+ students. Experience: Internship in web development. Contact: student@example.com +91 9876543210");
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
+  const [result, setResult] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
-  const analyze = async () => {
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+
+  // Core parsing request function to trigger the backend multipart pipeline
+  const processResumeFile = async (file: File) => {
+    if (file.type !== "application/pdf" && file.type !== "text/plain") {
+      flash("Only valid PDF or TXT files are supported.");
+      return;
+    }
+
     setLoading(true);
+    setUploadedFileName(file.name);
+    
+    const formData = new FormData();
+    formData.append("resume", file);
+
     try {
-      setResult(await api("/api/ai/resume/text", token, { method: "POST", body: JSON.stringify({ text }) }));
-      flash("Resume analyzed");
-    } catch (error) {
-      console.warn("Backend API not reachable for resume analysis. Using client-side logic.");
-      const parsedText = text.toLowerCase();
-      const detectedSkills = [];
-      const keywords = ["javascript", "typescript", "react", "next.js", "node.js", "express", "python", "java", "sql", "docker", "machine learning", "communication"];
-      for (const keyword of keywords) {
-        if (parsedText.includes(keyword)) {
-          detectedSkills.push(keyword.charAt(0).toUpperCase() + keyword.slice(1));
-        }
-      }
-      const suggestions = [];
-      if (detectedSkills.length < 3) suggestions.push("Add more technical keywords to your resume.");
-      if (!parsedText.includes("education") && !parsedText.includes("degree")) suggestions.push("Include a clear Education section.");
-      if (!parsedText.includes("project") && !parsedText.includes("built")) suggestions.push("Add a Projects section detailing your building experience.");
-      if (!parsedText.includes("contact") && !parsedText.includes("@")) suggestions.push("Provide clear contact details.");
-      
-      const score = Math.min(100, 40 + detectedSkills.length * 8 + (parsedText.length > 100 ? 15 : 5));
-      setResult({
-        score,
-        skills: detectedSkills.length > 0 ? detectedSkills : ["General Skills"],
-        suggestions: suggestions.length > 0 ? suggestions : ["Your resume looks clean and well-structured."]
+      // Direct call to your backend file parser endpoint
+      const res = await fetch("/api/ai/resume/upload", {
+        method: "POST",
+        headers: {
+          // Pass authorization token down securely from user state
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData,
       });
-      flash("Resume analyzed (offline mode)");
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to analyze document.");
+      }
+
+      const data = await res.json();
+      setResult(data);
+      flash("Resume analyzed successfully!");
+    } catch (error: any) {
+      flash(error.message || "Pipeline processing failure.");
+      setUploadedFileName(null);
     } finally {
       setLoading(false);
     }
   };
+
+  // Drag-and-drop interface event handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragActive(true);
+    } else if (e.type === "dragleave") {
+      setIsDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      processResumeFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      processResumeFile(e.target.files[0]);
+    }
+  };
+
   return (
-    <section className="analyzer-grid">
+    <section className="analyzer-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
       <div>
-        <span className="eyebrow"><FileScan size={15} /> Resume AI</span>
-        <h2>Analyze text resume.</h2>
-        <p className="section-copy">Paste your resume text below to run the AI placement matching analysis.</p>
-        <textarea value={text} onChange={(event) => setText(event.target.value)} />
-        <div className="inline-actions">
-          <button className="primary-button" onClick={analyze} disabled={loading}>{loading ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />} Analyze text</button>
+        <span className="eyebrow" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <FileScan size={15} /> Resume AI Smart Analyzer
+        </span>
+        <h2>Upload Your Placement Profile</h2>
+        <p className="section-copy" style={{ margin: "8px 0 16px", color: "var(--muted)" }}>
+          Drag and drop your structured PDF or text resume below. Our system will extract skills and score eligibility matching instantly.
+        </p>
+
+        {/* Drag and Drop Zone UI Panel */}
+        <div
+          onDragEnter={handleDrag}
+          onDragOver={handleDrag}
+          onDragLeave={handleDrag}
+          onDrop={handleDrop}
+          style={{
+            border: isDragActive ? "2px dashed var(--violet)" : "2px dashed var(--line)",
+            background: isDragActive ? "var(--hover)" : "var(--panel-2)",
+            borderRadius: "16px",
+            padding: "40px 20px",
+            textAlign: "center",
+            cursor: "pointer",
+            position: "relative",
+            transition: "all 0.2s ease"
+          }}
+        >
+          <input
+            type="file"
+            accept=".pdf,.txt"
+            onChange={handleFileChange}
+            style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+            disabled={loading}
+          />
+          
+          {loading ? (
+            <div style={{ display: "grid", placeItems: "center", gap: "8px" }}>
+              <Loader2 className="spin" size={32} style={{ color: "var(--violet)" }} />
+              <p style={{ fontSize: "14px", fontWeight: 500 }}>Extracting metrics from {uploadedFileName}...</p>
+            </div>
+          ) : uploadedFileName ? (
+            <div>
+              <CheckCircle2 size={32} style={{ color: "var(--mint)", margin: "0 auto 8px" }} />
+              <p style={{ fontSize: "14px", fontWeight: 600 }}>{uploadedFileName}</p>
+              <p style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>Click or drag a new file to replace</p>
+            </div>
+          ) : (
+            <div>
+              <Upload size={32} style={{ color: "var(--muted)", margin: "0 auto 12px" }} />
+              <p style={{ fontSize: "14px", fontWeight: 500 }}>
+                {isDragActive ? "Drop the file here!" : "Drag & Drop PDF here or click to browse"}
+              </p>
+              <p style={{ fontSize: "11px", color: "var(--muted)", marginTop: "6px" }}>Maximum file size: 5MB</p>
+            </div>
+          )}
         </div>
       </div>
+      
+      {/* Dynamic Results Display Frame */}
       <AnalysisPanel result={result} />
     </section>
   );
