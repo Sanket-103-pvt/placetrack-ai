@@ -12,6 +12,8 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { api, demoAccounts, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { ApplicationTimeline } from "./ApplicationTimeline";
 import { ReadinessRing } from "./ReadinessRing";
+import { getTheme, setTheme } from "@/lib/theme";
+import { ThemeToggle } from "./ui/ThemeToggle";
 
 type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users";
 
@@ -327,7 +329,7 @@ function removeStorage(key: string) {
 }
 
 export function Dashboard() {
-  const [dark, setDark] = useState(true);
+  const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<View>("Overview");
   const [notice, setNotice] = useState("");
@@ -366,6 +368,12 @@ export function Dashboard() {
           removeStorage("placetrack-user");
         });
     }
+  }, []);
+
+  useEffect(() => {
+    const current = getTheme();
+    setDark(current === "dark");
+    setTheme(current);
   }, []);
 
   useEffect(() => {
@@ -598,7 +606,7 @@ export function Dashboard() {
   }, [tests, searchQuery]);
 
   if (!user || !token) {
-    return <LoginScreen dark={dark} loading={loading} onToggleTheme={() => setDark(!dark)} onLogin={handleLogin} onSignup={handleSignup} />;
+    return <LoginScreen dark={dark} loading={loading} onToggleTheme={() => { const next = !dark; setDark(next); setTheme(next ? "dark" : "light"); }} onLogin={handleLogin} onSignup={handleSignup} />;
   }
 
   const name = user.student?.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
@@ -646,7 +654,7 @@ export function Dashboard() {
           </div>
           <div className="header-actions">
             <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <Bell size={18} />}</button>
-            <button onClick={() => setDark(!dark)} aria-label="Toggle theme">{dark ? <Sun size={18} /> : <Moon size={18} />}</button>
+            <ThemeToggle onThemeChange={(t) => setDark(t === "dark")} />
             <button className="user-button" onClick={() => setProfileOpen(true)} aria-label="Open profile"><CircleUserRound size={22} /></button>
           </div>
         </header>

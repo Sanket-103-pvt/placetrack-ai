@@ -9,6 +9,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.toggle('dark', localStorage.getItem('placetrack-theme') === 'dark')` }} />
+      </head>
       <body>{children}</body>
     </html>
   );

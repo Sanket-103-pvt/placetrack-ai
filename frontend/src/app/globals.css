@@ -30,6 +30,11 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   --line: rgba(106, 137, 167, 0.15); --hover: rgba(106, 137, 167, 0.08); --sidebar: #EBF2F7;
   --violet: #6A89A7; --secondary: #88BDF2; --accent: #BDDDFC;
 }
+html.dark .app {
+  --bg: #0B0B12; --panel: rgba(21, 21, 31, 0.75); --panel-2: rgba(28, 28, 40, 0.7); --text: #FFFFFF; --muted: #A1A1AA;
+  --line: rgba(255, 255, 255, 0.08); --hover: rgba(136, 189, 242, 0.06); --sidebar: #07070C;
+  --violet: #6A89A7; --secondary: #88BDF2; --accent: #BDDDFC;
+}
 .sidebar { width: 248px; position: fixed; inset: 0 auto 0 0; background: var(--sidebar); border-right: 1px solid var(--line); padding: 26px 18px; display: flex; flex-direction: column; z-index: 20; }
 .brand { display: flex; align-items: center; gap: 10px; font: 700 19px "Manrope"; padding: 0 8px 24px; }
 .brand b { color: var(--violet); }.brand-mark { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: white; background: linear-gradient(135deg,var(--violet),var(--secondary)); box-shadow: 0 8px 22px rgba(106, 137, 167, 0.25); }
