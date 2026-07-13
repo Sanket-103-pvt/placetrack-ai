@@ -13,8 +13,14 @@
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-Unit%20Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
+[![API Health](https://img.shields.io/badge/API-Health%20Check-brightgreen?style=flat-square)](https://your-backend-url/health)
 
 > **[🚀 Live Demo → frontend-umber-one-zuhj8ueccq.vercel.app](https://frontend-umber-one-zuhj8ueccq.vercel.app/)**
+
+### Quick Links
+- 🚀 [Live Demo](https://frontend-umber-one-zuhj8ueccq.vercel.app/)
+- 🩺 [Health Check Status](https://your-backend-url/health)
+- 📖 [API Documentation](#api-reference)
 
 A full-stack placement management platform enabling students to track applications, analyze resumes with AI, practice aptitude tests, and prepare for interviews — while coordinators and admins manage drives, pipelines, and reports from a unified dashboard.
 
@@ -142,6 +148,13 @@ Resume PDFs are parsed via `pdf-parse` into raw text, then sent to Google Gemini
 ---
 
 ## API Reference
+
+### Quick Overview
+- **Backend Base URL**: `http://localhost:4000` (Local) / `https://your-backend-url` (Production)
+- **Health Check**: `GET /health` → returns `{ "status": "ok", "database": "connected" }`
+- **Authentication**: All protected endpoints require `Authorization: Bearer <jwt_token>` header.
+
+### Endpoints Table
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
