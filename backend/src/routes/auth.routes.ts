@@ -103,7 +103,11 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
     cgpa: z.number().min(0).max(10).optional(),
     graduationYear: z.number().int().min(2024).max(2035).optional(),
     skills: z.array(z.string().min(1)).optional(),
-    backlogs: z.number().int().min(0).max(10).optional()
+    backlogs: z.number().int().min(0).max(10).optional(),
+    phone: z.string().nullable().optional(),
+    linkedinUrl: z.string().nullable().optional(),
+    projectsCount: z.number().int().min(0).optional(),
+    internshipsCount: z.number().int().min(0).optional()
   }).parse(request.body);
 
   const student = await prisma.student.findUnique({ where: { userId: request.auth!.userId } });

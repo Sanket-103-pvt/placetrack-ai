@@ -28,8 +28,8 @@ dashboardRouter.get("/", async (request, response) => {
       aptitudeAccuracy: averageAccuracy,
       codingScore: 72 + Math.min(student.skills.length * 2, 18),
       communicationScore: 70,
-      projects: 3,
-      internships: 1,
+      projects: student.projectsCount,
+      internships: student.internshipsCount,
       mockTests: student.mockTestCount,
       backlogs: student.backlogs
     });
@@ -37,7 +37,20 @@ dashboardRouter.get("/", async (request, response) => {
       await prisma.student.update({ where: { id: student.id }, data: { readinessScore: readiness.score } });
     }
     return response.json({
-      profile: { id: student.id, name: student.name, branch: student.branch, cgpa: student.cgpa, graduationYear: student.graduationYear, skills: student.skills },
+      profile: { 
+        id: student.id, 
+        name: student.name, 
+        branch: student.branch, 
+        cgpa: student.cgpa, 
+        graduationYear: student.graduationYear, 
+        skills: student.skills,
+        phone: student.phone,
+        linkedinUrl: student.linkedinUrl,
+        projectsCount: student.projectsCount,
+        internshipsCount: student.internshipsCount,
+        resumeUrl: student.resumeUrl,
+        mockTestCount: student.mockTestCount
+      },
       readiness,
       stats: {
         applications: student.applications.length,
