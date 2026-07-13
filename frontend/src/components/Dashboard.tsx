@@ -14,6 +14,7 @@ import { ApplicationTimeline } from "./ApplicationTimeline";
 import { ReadinessRing } from "./ReadinessRing";
 import { getTheme, setTheme } from "@/lib/theme";
 import { ThemeToggle } from "./ui/ThemeToggle";
+import ProfileCompleteness from "./ProfileCompleteness";
 
 type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users";
 
@@ -974,7 +975,11 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
     branch: student?.branch ?? "Computer Engineering",
     cgpa: String(student?.cgpa ?? 7),
     graduationYear: String(student?.graduationYear ?? 2027),
-    backlogs: String(student?.backlogs ?? 0)
+    backlogs: String(student?.backlogs ?? 0),
+    phone: student?.phone ?? "",
+    linkedinUrl: student?.linkedinUrl ?? "",
+    projectsCount: String(student?.projectsCount ?? 0),
+    internshipsCount: String(student?.internshipsCount ?? 0)
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
@@ -994,7 +999,11 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
           cgpa: Number(form.cgpa),
           graduationYear: Number(form.graduationYear),
           skills: selectedSkills,
-          backlogs: Number(form.backlogs)
+          backlogs: Number(form.backlogs),
+          phone: form.phone || null,
+          linkedinUrl: form.linkedinUrl || null,
+          projectsCount: Number(form.projectsCount),
+          internshipsCount: Number(form.internshipsCount)
         })
       });
       await onSaved();
@@ -1026,6 +1035,10 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
             <label>CGPA<input value={form.cgpa} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
             <label>Graduation Year<input value={form.graduationYear} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
             <label>Backlogs<input value={form.backlogs} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
+            <label>Phone Number<input value={form.phone} onChange={(event) => setForm((old) => ({ ...old, phone: event.target.value }))} /></label>
+            <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
+            <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
+            <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
             <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
           </div>
           <div className="inline-actions" style={{ marginTop: "24px" }}>
@@ -1064,7 +1077,11 @@ function ProfileEditor({ user, token, onSaved, flash }: {
     branch: student?.branch ?? "Computer Engineering",
     cgpa: String(student?.cgpa ?? 7),
     graduationYear: String(student?.graduationYear ?? 2027),
-    backlogs: String(student?.backlogs ?? 0)
+    backlogs: String(student?.backlogs ?? 0),
+    phone: student?.phone ?? "",
+    linkedinUrl: student?.linkedinUrl ?? "",
+    projectsCount: String(student?.projectsCount ?? 0),
+    internshipsCount: String(student?.internshipsCount ?? 0)
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
@@ -1084,7 +1101,11 @@ function ProfileEditor({ user, token, onSaved, flash }: {
           cgpa: Number(form.cgpa),
           graduationYear: Number(form.graduationYear),
           skills: selectedSkills,
-          backlogs: Number(form.backlogs)
+          backlogs: Number(form.backlogs),
+          phone: form.phone || null,
+          linkedinUrl: form.linkedinUrl || null,
+          projectsCount: Number(form.projectsCount),
+          internshipsCount: Number(form.internshipsCount)
         })
       });
       await onSaved();
@@ -1119,6 +1140,10 @@ function ProfileEditor({ user, token, onSaved, flash }: {
         <label>CGPA<input value={form.cgpa} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
         <label>Graduation Year<input value={form.graduationYear} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
         <label>Backlogs<input value={form.backlogs} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
+        <label>Phone Number<input value={form.phone} onChange={(event) => setForm((old) => ({ ...old, phone: event.target.value }))} /></label>
+        <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
+        <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
+        <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
         <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
       </div>
       <div className="inline-actions" style={{ marginTop: "24px" }}>
@@ -1382,6 +1407,12 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate }: {
           <Stat icon={<Building2 />} value={String(dashboard?.companies ?? drives.length)} label="Companies" sub="Engineering seed" tone="blue" trend="Live Data" />
         </div>
       </section>
+      {role === "STUDENT" && dashboard?.profile && (
+        <ProfileCompleteness
+          student={dashboard.profile as any}
+          onEditProfile={() => onNavigate("Profile")}
+        />
+      )}
       <section className="mid-grid">
         <div className="card applications-card">
           <div className="card-head"><div><span className="card-kicker">Recent</span><h3>Applications</h3></div><button onClick={() => onNavigate("Applications")}>View all <ArrowUpRight size={14} /></button></div>

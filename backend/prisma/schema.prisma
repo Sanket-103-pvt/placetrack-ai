@@ -58,6 +58,10 @@ model Student {
   resumeUrl       String?
   readinessScore  Float         @default(0)
   mockTestCount   Int           @default(0)
+  phone           String?
+  linkedinUrl     String?
+  projectsCount   Int           @default(0)
+  internshipsCount Int          @default(0)
   applications    Application[]
   testResults     TestResult[]
 

@@ -14,6 +14,12 @@ export type SessionUser = {
     backlogs: number;
     graduationYear: number;
     skills: string[];
+    phone?: string | null;
+    linkedinUrl?: string | null;
+    projectsCount?: number;
+    internshipsCount?: number;
+    resumeUrl?: string | null;
+    mockTestCount?: number;
   } | null;
   coordinator?: { id: string; department: string; phone?: string | null } | null;
 };
