@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -15,6 +15,8 @@ import { ReadinessRing } from "./ReadinessRing";
 import { getTheme, setTheme } from "@/lib/theme";
 import { ThemeToggle } from "./ui/ThemeToggle";
 import ProfileCompleteness from "./ProfileCompleteness";
+import ProfileCardExport from "./ProfileCardExport";
+import { useProfileExport } from "@/hooks/useProfileExport";
 import DashboardSkeleton from "./ui/DashboardSkeleton";
 import TableSkeleton from "./ui/TableSkeleton";
 import OpportunityCardSkeleton from "./ui/OpportunityCardSkeleton";
@@ -671,7 +673,7 @@ export function Dashboard() {
             {view === "Resume AI" && <ResumeAI token={token} flash={flash} />}
             {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} />}
             {view === "Interview" && <InterviewCoach token={token} flash={flash} />}
-            {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} />}
+            {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} dashboard={dashboard} />}
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} />}
             {view === "Analytics" && <Analytics dashboard={dashboard} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
@@ -1054,27 +1056,31 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
   );
 }
 
-function ProfilePage({ user, token, onSaved, flash }: {
+function ProfilePage({ user, token, onSaved, flash, dashboard }: {
   user: SessionUser;
   token: string;
   onSaved: () => void | Promise<void>;
   flash: (message: string) => void;
+  dashboard: DashboardData | null;
 }) {
   return (
     <>
       <PageTitle eyebrow="Profile" title="Keep your placement profile updated." copy="CGPA, skills, branch, graduation year, and backlogs directly affect eligibility and readiness." />
-      <ProfileEditor user={user} token={token} onSaved={onSaved} flash={flash} />
+      <ProfileEditor user={user} token={token} onSaved={onSaved} flash={flash} dashboard={dashboard} />
     </>
   );
 }
 
-function ProfileEditor({ user, token, onSaved, flash }: {
+function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
   user: SessionUser;
   token: string;
   onSaved: () => void | Promise<void>;
   flash: (message: string) => void;
+  dashboard: DashboardData | null;
 }) {
   const student = user.student;
+  const cardRef = useRef<HTMLDivElement>(null);
+  const { exportCard, exporting } = useProfileExport();
   const [form, setForm] = useState({
     name: student?.name ?? "",
     branch: student?.branch ?? "Computer Engineering",
@@ -1088,6 +1094,11 @@ function ProfileEditor({ user, token, onSaved, flash }: {
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
+
+  const readinessScore = Math.round(
+    (dashboard?.readiness as { score?: number } | undefined)?.score ??
+    (student?.cgpa ?? 7) * 8 + Math.min(selectedSkills.length * 3, 24)
+  );
 
   const save = async () => {
     if (!student) {
@@ -1151,8 +1162,42 @@ function ProfileEditor({ user, token, onSaved, flash }: {
       </div>
       <div className="inline-actions" style={{ marginTop: "24px" }}>
         <button className="primary-button" onClick={save} disabled={saving}>{saving ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} Save profile</button>
+        <button
+          className="secondary-button"
+          disabled={exporting}
+          style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+          onClick={async () => {
+            if (!cardRef.current) return;
+            await exportCard(
+              cardRef.current,
+              `placetrack-profile-${form.name.replace(/\s+/g, "-").toLowerCase()}-2026.png`
+            );
+            flash("Profile card exported!");
+          }}
+        >
+          {exporting ? <Loader2 className="spin" size={16} /> : <Share2 size={16} />}
+          {exporting ? "Exporting…" : "Export Profile Card"}
+        </button>
         <span className="helper-text">Tip: add hackathons, certifications, internships, and stack keywords to improve matching.</span>
       </div>
+      {/* Hidden card for html2canvas capture — always rendered, positioned off-screen */}
+      {student && (
+        <ProfileCardExport
+          ref={cardRef}
+          student={{
+            name: form.name,
+            branch: form.branch,
+            cgpa: Number(form.cgpa),
+            graduationYear: Number(form.graduationYear),
+            skills: selectedSkills,
+            backlogs: Number(form.backlogs),
+            projectsCount: Number(form.projectsCount),
+            internshipsCount: Number(form.internshipsCount),
+            mockTestCount: student.mockTestCount
+          }}
+          readinessScore={Math.min(100, Math.max(0, readinessScore))}
+        />
+      )}
     </section>
   );
 }
