@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUpRight, Bell, BookOpenCheck, Bookmark, BriefcaseBusiness, Building2, CalendarDays, CheckCircle2,
   CircleUserRound, Command, FileScan, Gauge, GraduationCap, LayoutDashboard, Loader2, LogOut,
-  Menu, Moon, Plus, Search, Send, Share2, Sparkles, Sun, Target, Trophy, Upload, Users, X
+  Menu, Moon, Plus, RotateCw, Search, Send, Share2, Sparkles, Sun, Target, Trophy, Upload, Users, X
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, demoAccounts, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
@@ -20,6 +20,8 @@ import { useProfileExport } from "@/hooks/useProfileExport";
 import DashboardSkeleton from "./ui/DashboardSkeleton";
 import TableSkeleton from "./ui/TableSkeleton";
 import OpportunityCardSkeleton from "./ui/OpportunityCardSkeleton";
+import { NotificationBell } from "./NotificationBell";
+import { useNotifications } from "../hooks/useNotifications";
 
 type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users";
 
@@ -351,6 +353,9 @@ export function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDrive, setSelectedDrive] = useState<Drive | null>(null);
 
+  const initialNotifications = useMemo(() => user?.notifications || [], [user?.notifications]);
+  const { notifications, markAsRead, markAllAsRead } = useNotifications(token, initialNotifications);
+
   const role = user?.role ?? "STUDENT";
   const nav = useMemo(() => {
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
@@ -659,7 +664,8 @@ export function Dashboard() {
             <kbd>Ctrl + K</kbd>
           </div>
           <div className="header-actions">
-            <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <Bell size={18} />}</button>
+            <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <RotateCw size={18} />}</button>
+            <NotificationBell notifications={notifications} markAsRead={markAsRead} markAllAsRead={markAllAsRead} onNavigate={setView} />
             <ThemeToggle onThemeChange={(t) => setDark(t === "dark")} />
             <button className="user-button" onClick={() => setProfileOpen(true)} aria-label="Open profile"><CircleUserRound size={22} /></button>
           </div>

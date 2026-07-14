@@ -14,10 +14,13 @@ notificationsRouter.get("/", async (request, response) => {
 });
 
 notificationsRouter.patch("/:id/read", async (request, response) => {
+  const isAll = request.params.id === "all";
   const result = await prisma.notification.updateMany({
-    where: { id: String(request.params.id), userId: request.auth!.userId },
+    where: isAll 
+      ? { userId: request.auth!.userId, isRead: false }
+      : { id: String(request.params.id), userId: request.auth!.userId },
     data: { isRead: true }
   });
-  if (!result.count) return response.status(404).json({ error: "Notification not found" });
+  if (!isAll && !result.count) return response.status(404).json({ error: "Notification not found" });
   response.json({ success: true });
 });

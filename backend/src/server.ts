@@ -8,6 +8,8 @@ import { Prisma } from "@prisma/client";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { prisma } from "./lib/prisma.js";
+import { createServer } from "http";
+import { initSocket } from "./lib/socket.js";
 import { aiRouter } from "./routes/ai.routes.js";
 import { applicationsRouter } from "./routes/applications.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
@@ -73,7 +75,10 @@ app.use((error: any, _request: express.Request, response: express.Response, _nex
   return response.status(500).json({ error: "Something went wrong" });
 });
 
-const server = app.listen(port, async () => {
+const httpServer = createServer(app);
+initSocket(httpServer);
+
+const server = httpServer.listen(port, async () => {
   console.log(`PlaceTrack API running on http://localhost:${port}`);
   try {
     // Pre-warm DB connection so first user request doesn't pay cold-start cost
