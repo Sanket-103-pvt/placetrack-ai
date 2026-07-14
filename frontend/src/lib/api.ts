@@ -2,10 +2,19 @@ export type Role = "STUDENT" | "COORDINATOR" | "ADMIN";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
+export type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+};
+
 export type SessionUser = {
   id: string;
   email: string;
   role: Role;
+  notifications?: NotificationItem[];
   student?: {
     id: string;
     name: string;

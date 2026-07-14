@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { checkEligibility } from "../services/eligibility.js";
 import { audit } from "../lib/audit.js";
+import { emitToUser } from "../lib/socket.js";
 
 export const drivesRouter = Router();
 
@@ -70,5 +71,26 @@ drivesRouter.post("/", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (r
     include: { company: true }
   });
   await audit(request.auth!.userId, "CREATE", "placement-drive", { driveId: drive.id });
+
+  // Find all eligible students and send notifications
+  try {
+    const students = await prisma.student.findMany();
+    for (const student of students) {
+      const eligibility = checkEligibility(student, drive);
+      if (eligibility.eligible) {
+        const notification = await prisma.notification.create({
+          data: {
+            userId: student.userId,
+            title: "New Eligible Drive",
+            message: `${drive.company.name} is hiring for ${drive.role}`
+          }
+        });
+        emitToUser(student.userId, "drive:new", notification);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to notify eligible students for new drive:", error);
+  }
+
   response.status(201).json(drive);
 });

@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { checkEligibility } from "../services/eligibility.js";
+import { emitToUser } from "../lib/socket.js";
 
 export const applicationsRouter = Router();
 applicationsRouter.use(authenticate);
@@ -53,12 +54,14 @@ applicationsRouter.patch("/:id/status", authorize(UserRole.COORDINATOR, UserRole
     where: { id: current.id },
     data: { status: input.status, timeline: [...timeline, { status: input.status, at: new Date().toISOString(), note: input.note ?? "Status updated" }] }
   });
-  await Promise.all([
-    prisma.notification.create({
-      data: { userId: current.student.userId, title: "Application status updated", message: `${current.drive.company.name}: ${input.status.replaceAll("_", " ")}` }
-    }),
-    audit(request.auth!.userId, "UPDATE_STATUS", "application", { applicationId: current.id, status: input.status })
-  ]);
+  
+  const notification = await prisma.notification.create({
+    data: { userId: current.student.userId, title: "Application status updated", message: `${current.drive.company.name}: ${input.status.replaceAll("_", " ")}` }
+  });
+  
+  await audit(request.auth!.userId, "UPDATE_STATUS", "application", { applicationId: current.id, status: input.status });
+  emitToUser(current.student.userId, "application:status_changed", notification);
+  
   response.json(application);
 });
 
@@ -73,9 +76,13 @@ applicationsRouter.post("/:id/interview", authorize(UserRole.COORDINATOR, UserRo
     create: { applicationId: application.id, ...input, status: "SCHEDULED" },
     update: { ...input, status: "SCHEDULED" }
   });
-  await prisma.notification.create({
+  
+  const notification = await prisma.notification.create({
     data: { userId: application.student.userId, title: "Interview scheduled", message: `${application.drive.company.name} on ${input.dateTime.toLocaleString()}` }
   });
+  
   await audit(request.auth!.userId, "SCHEDULE", "interview", { interviewId: interview.id });
+  emitToUser(application.student.userId, "interview:scheduled", notification);
+  
   response.status(201).json(interview);
 });
