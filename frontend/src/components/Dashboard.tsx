@@ -15,6 +15,9 @@ import { ReadinessRing } from "./ReadinessRing";
 import { getTheme, setTheme } from "@/lib/theme";
 import { ThemeToggle } from "./ui/ThemeToggle";
 import ProfileCompleteness from "./ProfileCompleteness";
+import DashboardSkeleton from "./ui/DashboardSkeleton";
+import TableSkeleton from "./ui/TableSkeleton";
+import OpportunityCardSkeleton from "./ui/OpportunityCardSkeleton";
 
 type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users";
 
@@ -662,9 +665,9 @@ export function Dashboard() {
 
         <AnimatePresence mode="wait">
           <motion.div className="content" key={view} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .22 }}>
-            {view === "Overview" && <Overview role={role} name={name} dashboard={dashboard} applications={filteredApplications} drives={filteredDrives} onNavigate={setView} />}
-            {view === "Applications" && <Applications role={role} token={token} applications={filteredApplications} onRefresh={() => refreshAll()} flash={flash} />}
-            {view === "Opportunities" && <Opportunities role={role} token={token} drives={filteredDrives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} onViewDrive={setSelectedDrive} />}
+            {view === "Overview" && <Overview role={role} name={name} dashboard={dashboard} applications={filteredApplications} drives={filteredDrives} onNavigate={setView} loading={loading} />}
+            {view === "Applications" && <Applications role={role} token={token} applications={filteredApplications} onRefresh={() => refreshAll()} flash={flash} loading={loading} />}
+            {view === "Opportunities" && <Opportunities role={role} token={token} drives={filteredDrives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} onViewDrive={setSelectedDrive} loading={loading} />}
             {view === "Resume AI" && <ResumeAI token={token} flash={flash} />}
             {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} />}
             {view === "Interview" && <InterviewCoach token={token} flash={flash} />}
@@ -1264,9 +1267,12 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
   );
 }
 
-function Overview({ role, name, dashboard, applications, drives, onNavigate }: { role: Role; name: string; dashboard: DashboardData | null; applications: Application[]; drives: Drive[]; onNavigate: (view: View) => void }) {
+function Overview({ role, name, dashboard, applications, drives, onNavigate, loading }: { role: Role; name: string; dashboard: DashboardData | null; applications: Application[]; drives: Drive[]; onNavigate: (view: View) => void; loading: boolean }) {
   const readiness = dashboard?.readiness as { score?: number; reasons?: string[] } | undefined;
   const stats = dashboard?.stats as Record<string, number> | undefined;
+
+  // Show skeleton on first load before any data arrives
+  if (loading && !dashboard) return <DashboardSkeleton />;
 
   const currentDateString = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -1429,7 +1435,7 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate }: {
   );
 }
 
-function Applications({ role, token, applications, onRefresh, flash }: { role: Role; token: string; applications: Application[]; onRefresh: () => void; flash: (message: string) => void }) {
+function Applications({ role, token, applications, onRefresh, flash, loading }: { role: Role; token: string; applications: Application[]; onRefresh: () => void; flash: (message: string) => void; loading: boolean }) {
   const [busyId, setBusyId] = useState("");
   const updateStatus = async (id: string, status: string) => {
     setBusyId(id);
@@ -1446,7 +1452,9 @@ function Applications({ role, token, applications, onRefresh, flash }: { role: R
   return (
     <>
       <PageTitle eyebrow="Application center" title="Every application, one clear story." copy="Track status, timelines, and interview details." />
-      <div className="application-detail-list">
+      {loading && applications.length === 0
+        ? <TableSkeleton rows={5} />
+        : <div className="application-detail-list">
         {applications.map((item) => <section className="card application-detail" key={item.id}>
           <div className="application-detail-head">
             <div className="company-logo large">{initials(item.drive.company.name)}</div>
@@ -1463,7 +1471,7 @@ function Applications({ role, token, applications, onRefresh, flash }: { role: R
           </div>}
         </section>)}
         {!applications.length && <EmptyState title="No applications yet" copy="Apply to an open drive to create the first timeline." />}
-      </div>
+      </div>}
     </>
   );
 }
@@ -1527,7 +1535,7 @@ function getCompanyBranding(companyName: string) {
   };
 }
 
-function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onViewDrive }: { role: Role; token: string; drives: Drive[]; onRefresh: () => void; onNavigate: (view: View) => void; flash: (message: string) => void; onViewDrive: (drive: Drive) => void }) {
+function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onViewDrive, loading }: { role: Role; token: string; drives: Drive[]; onRefresh: () => void; onNavigate: (view: View) => void; flash: (message: string) => void; onViewDrive: (drive: Drive) => void; loading: boolean }) {
   const sortedDrives = [...drives].sort((a, b) => {
     // Applied goes last
     if (a.alreadyApplied !== b.alreadyApplied) return a.alreadyApplied ? 1 : -1;
@@ -1542,6 +1550,15 @@ function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onVi
   return (
     <>
       <PageTitle eyebrow="Placement drives" title="KK Wagh engineering placement profile." copy="Drives are filtered by your eligibility — branch, CGPA, and backlogs." />
+      {loading && drives.length === 0
+        ? (
+          <div className="opportunity-grid" aria-busy="true" aria-label="Loading drives…">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <OpportunityCardSkeleton key={i} />
+            ))}
+          </div>
+        )
+        : (
       <div className="opportunity-grid">
         {sortedDrives.slice(0, 24).map((drive) => {
           const eligible = drive.eligibility?.eligible !== false;
@@ -1680,6 +1697,7 @@ function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onVi
           );
         })}
       </div>
+      )}
     </>
   );
 }
