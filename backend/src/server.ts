@@ -17,6 +17,7 @@ import { notificationsRouter } from "./routes/notifications.routes.js";
 import { reportsRouter } from "./routes/reports.routes.js";
 import { testsRouter } from "./routes/tests.routes.js";
 
+
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 const allowedOrigins = new Set([
@@ -59,9 +60,11 @@ app.use("/api/ai", aiRouter);
 app.use("/api/reports", reportsRouter);
 
 app.use((_request, response) => response.status(404).json({ error: "Route not found" }));
-app.use((error: unknown, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
+
+// Fully corrected Express global error handler middleware block
+app.use((error: any, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
   if (error instanceof z.ZodError) return response.status(400).json({ error: "Invalid request", issues: error.issues });
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+  if (error && typeof error === "object" && error.constructor?.name === "PrismaClientKnownRequestError") {
     if (error.code === "P2002") return response.status(409).json({ error: "This record already exists" });
     if (error.code === "P2025") return response.status(404).json({ error: "Record not found" });
   }
@@ -98,6 +101,7 @@ const server = app.listen(port, async () => {
     console.error("Failed to connect to database:", error);
   }
 });
+
 const shutdown = async () => {
   server.close();
   await prisma.$disconnect();

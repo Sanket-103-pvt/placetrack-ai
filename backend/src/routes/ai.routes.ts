@@ -16,6 +16,7 @@ const upload = multer({
 
 aiRouter.use(authenticate);
 
+// 1. Text Paste Analyzer Route
 aiRouter.post("/resume/text", async (request, response) => {
   const { text } = z.object({ text: z.string().min(20).max(100_000) }).parse(request.body);
   const result = await analyzeResumeTextSmart(text);
@@ -26,6 +27,7 @@ aiRouter.post("/resume/text", async (request, response) => {
   response.json(result);
 });
 
+// 2. NEW/UPDATED: Native PDF and TXT File Upload Analyzer Route
 aiRouter.post("/resume/upload", upload.single("resume"), async (request, response) => {
   if (!request.file) return response.status(400).json({ error: "No file uploaded" });
 
@@ -46,27 +48,36 @@ aiRouter.post("/resume/upload", upload.single("resume"), async (request, respons
   }
 
   if (text.trim().length < 20) return response.status(422).json({ error: "Could not extract enough text from the resume" });
+  
   const result = await analyzeResumeTextSmart(text);
   await prisma.resumeAnalysis.create({
     data: {
-      userId: request.auth!.userId, fileName: request.file.originalname, score: result.score,
-      skills: result.skills, sections: result.sectionHits, suggestions: result.suggestions
+      userId: request.auth!.userId, 
+      fileName: request.file.originalname, 
+      score: result.score,
+      skills: result.skills, 
+      sections: result.sectionHits, 
+      suggestions: result.suggestions
     }
   });
+  
   response.json({ ...result, fileName: request.file.originalname, extractedCharacters: text.length });
 });
 
+// 3. History Retrieval Route
 aiRouter.get("/resume/history", async (request, response) => {
   response.json(await prisma.resumeAnalysis.findMany({
     where: { userId: request.auth!.userId }, orderBy: { createdAt: "desc" }, take: 20
   }));
 });
 
+// 4. Interview Prep Generation Route
 aiRouter.post("/interview", async (request, response) => {
   const { role, count } = z.object({ role: z.string().default("software engineer"), count: z.number().int().min(1).max(12).default(6) }).parse(request.body);
   response.json(await generateInterviewQuestionsSmart(role, count));
 });
 
+// 5. Interview Answer Feedback Route
 aiRouter.post("/interview/feedback", async (request, response) => {
   const { question, answer, role } = z.object({
     question: z.string().min(5),
@@ -77,4 +88,5 @@ aiRouter.post("/interview/feedback", async (request, response) => {
   response.json(result);
 });
 
+// 6. Readiness Evaluation Route
 aiRouter.post("/readiness", (request, response) => response.json(predictReadiness(request.body)));
