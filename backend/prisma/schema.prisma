@@ -213,3 +213,25 @@ model ResumeAnalysis {
 
   @@index([userId, createdAt])
 }
+
+model InterviewQuestion {
+  id         String   @id @default(cuid())
+  role       String
+  question   String
+  difficulty String   // EASY, MEDIUM, HARD
+  category   String   // Technical, Behavioral, HR
+  modelAnswer String?
+  createdAt  DateTime @default(now())
+  attempts   QuestionAttempt[]
+}
+
+model QuestionAttempt {
+  id         String   @id @default(cuid())
+  questionId String
+  userId     String
+  answer     String
+  score      Int?
+  feedback   String?
+  createdAt  DateTime @default(now())
+  question   InterviewQuestion @relation(fields: [questionId], references: [id])
+}

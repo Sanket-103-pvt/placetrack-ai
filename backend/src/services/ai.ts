@@ -184,3 +184,64 @@ Response:`;
   }
 }
 
+export async function generateSingleQuestionSmart(role: string, difficulty: string) {
+  const prompt = `You are an expert technical interviewer.
+Generate one placement interview question for the role "${role}" with difficulty level "${difficulty}" (choose from: EASY, MEDIUM, HARD).
+Return a strict JSON response ONLY. Do not wrap in extra explanation or markdown blocks outside valid JSON.
+JSON keys required:
+- question: string containing the question text
+- category: string (choose one of: Technical, Behavioral, HR)
+- modelAnswer: string containing a high-quality model response for this question
+
+Response:`;
+
+  const fallback = {
+    question: `What are some of the key practices or technologies you would focus on as a ${role} with ${difficulty} level?`,
+    category: "Technical",
+    modelAnswer: "A high-quality response should detail relevant technologies, patterns, and methodologies suitable for this role."
+  };
+
+  try {
+    const result = await callGemini(prompt);
+    if (!result) return fallback;
+    return {
+      question: typeof result.question === "string" ? result.question : fallback.question,
+      category: typeof result.category === "string" ? result.category : fallback.category,
+      modelAnswer: typeof result.modelAnswer === "string" ? result.modelAnswer : fallback.modelAnswer
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+export async function evaluateAttemptSmart(question: string, answer: string, role: string) {
+  const prompt = `You are an expert technical interviewer evaluating a student candidate for a ${role} position.
+Evaluate their answer to the interview question below.
+
+Question: ${question}
+Candidate's Answer: ${answer}
+
+Evaluate and return a strict JSON response ONLY. Do not wrap in extra explanation or markdown blocks outside valid JSON.
+JSON keys required:
+- score: number from 1 to 10
+- feedback: string containing a detailed constructive feedback covering strengths, weaknesses, and how to improve.
+
+Response:`;
+
+  const fallback = {
+    score: answer.trim().length > 50 ? 7 : answer.trim().length > 20 ? 5 : 3,
+    feedback: "The answer provided addresses the question, but could be enhanced with more specific details, structured explanations, or technical terminologies."
+  };
+
+  try {
+    const result = await callGemini(prompt);
+    if (!result) return fallback;
+    return {
+      score: typeof result.score === "number" ? Math.max(1, Math.min(10, Math.round(result.score))) : fallback.score,
+      feedback: typeof result.feedback === "string" ? result.feedback : fallback.feedback
+    };
+  } catch {
+    return fallback;
+  }
+}
+

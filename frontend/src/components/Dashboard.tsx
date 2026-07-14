@@ -22,8 +22,9 @@ import TableSkeleton from "./ui/TableSkeleton";
 import OpportunityCardSkeleton from "./ui/OpportunityCardSkeleton";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
+import PracticeView from "./PracticeView";
 
-type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users";
+type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users" | "Practice";
 
 type Drive = {
   id: string;
@@ -110,7 +111,8 @@ const navIcons: Record<View, ElementType> = {
   Profile: CircleUserRound,
   "Drive Creator": Plus,
   Analytics: Gauge,
-  Users: Users
+  Users: Users,
+  Practice: Target
 };
 
 const MOCK_DRIVES: Drive[] = [
@@ -360,7 +362,7 @@ export function Dashboard() {
   const nav = useMemo(() => {
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
-    if (role === "STUDENT") base.push("Interview");
+    if (role === "STUDENT") base.push("Interview", "Practice");
     if (role === "ADMIN") base.push("Users");
     return base;
   }, [role]);
@@ -683,6 +685,7 @@ export function Dashboard() {
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} />}
             {view === "Analytics" && <Analytics dashboard={dashboard} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
+            {view === "Practice" && <PracticeView token={token} flash={flash} />}
           </motion.div>
         </AnimatePresence>
       </section>

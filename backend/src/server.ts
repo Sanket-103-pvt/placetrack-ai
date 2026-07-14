@@ -18,6 +18,7 @@ import { drivesRouter } from "./routes/drives.routes.js";
 import { notificationsRouter } from "./routes/notifications.routes.js";
 import { reportsRouter } from "./routes/reports.routes.js";
 import { testsRouter } from "./routes/tests.routes.js";
+import { questionsRouter } from "./routes/questions.routes.js";
 
 
 const app = express();
@@ -60,6 +61,7 @@ app.use("/api/tests", testsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/reports", reportsRouter);
+app.use("/api/questions", questionsRouter);
 
 app.use((_request, response) => response.status(404).json({ error: "Route not found" }));
 
