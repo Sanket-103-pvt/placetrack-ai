@@ -7,6 +7,25 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
 
+/* ─── Skeleton shimmer ─────────────────────────────────────── */
+@keyframes skeleton-shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+.skeleton-base {
+  background: linear-gradient(
+    90deg,
+    var(--line) 0%,
+    var(--panel-2) 50%,
+    var(--line) 100%
+  );
+  background-size: 1200px 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+  display: block;
+}
+
+
 .app {
   --bg: #0B0B12; --panel: rgba(21, 21, 31, 0.75); --panel-2: rgba(28, 28, 40, 0.7); --text: #FFFFFF; --muted: #A1A1AA;
   --line: rgba(255, 255, 255, 0.08); --hover: rgba(136, 189, 242, 0.06); --sidebar: #07070C;
