@@ -2,6 +2,8 @@
 
 * { box-sizing: border-box; }
 :root { font-family: "DM Sans", sans-serif; }
+body, button, input, select, textarea { font-family: "DM Sans", sans-serif; }
+h1, h2, h3, h4, h5, h6 { font-family: "Manrope", sans-serif; font-weight: 800; letter-spacing: -0.03em; }
 body { margin: 0; background: #0d0d13; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
