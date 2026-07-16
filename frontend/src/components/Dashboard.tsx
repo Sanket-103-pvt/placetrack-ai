@@ -1254,68 +1254,168 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
 
   return (
     <main className={dark ? "app dark login-app" : "app light login-app"}>
-      <div className="login-card card">
-        <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
-        <span className="eyebrow">Campus placement command center</span>
-        <h1>{mode === "signin" ? "Login to your account." : "Create your account."}</h1>
-        <p className="section-copy">{mode === "signin" ? "Enter your email and password to access your placement dashboard." : "Choose your role and fill in your details to get started."}</p>
+      {/* Left panel: dynamic branding & info */}
+      <div className="login-brand-panel" style={{
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "48px",
+        background: dark 
+          ? "linear-gradient(135deg, #090915 0%, #12122b 50%, #07070F 100%)"
+          : "linear-gradient(135deg, #E2EDF8 0%, #C9DDF0 50%, #DFEAF5 100%)",
+        borderRight: "1px solid var(--line)",
+        position: "relative",
+        overflow: "hidden"
+      }}>
+        {/* Glow decoration */}
+        <div style={{
+          position: "absolute", top: "10%", left: "10%", width: "400px", height: "400px",
+          background: dark 
+            ? "radial-gradient(circle, rgba(136, 189, 242, 0.07) 0%, transparent 70%)"
+            : "radial-gradient(circle, rgba(44, 108, 176, 0.08) 0%, transparent 70%)",
+          pointerEvents: "none"
+        }} />
         
-        {errorMsg && (
-          <div className="login-error-message">
-            ⚠️ {errorMsg}
-          </div>
-        )}
-
-        <div className="auth-tabs">
-          <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
-          <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
+        <div className="brand" style={{ zIndex: 1, padding: 0 }}>
+          <div className="brand-mark"><Command size={20} /></div>
+          <span>PlaceTrack <b style={{ color: "var(--secondary)" }}>AI</b></span>
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); submitAuth(); }} style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
-          {mode === "signup" && <>
-            <div>
-              <label style={{ display: "block", marginBottom: "6px" }}>I am a</label>
-              <div className="role-selector">
-                <button
-                  type="button"
-                  className={role === "STUDENT" ? "role-btn active" : "role-btn"}
-                  onClick={() => setRole("STUDENT")}
-                >
-                  🎓 Student
-                </button>
-                <button
-                  type="button"
-                  className={role === "COORDINATOR" ? "role-btn active" : "role-btn"}
-                  onClick={() => setRole("COORDINATOR")}
-                >
-                  🏢 Coordinator
-                </button>
-              </div>
+        
+        <div style={{ maxWidth: "440px", zIndex: 1, margin: "auto 0" }}>
+          <span className="eyebrow" style={{ color: "var(--secondary)", letterSpacing: "0.15em", display: "inline-block" }}>
+            Campus Placement Command Center
+          </span>
+          <h2 style={{ fontSize: "36px", fontWeight: 800, color: "var(--text)", marginTop: "12px", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
+            Step into your future with intelligence.
+          </h2>
+          <p style={{ color: "var(--muted)", fontSize: "14px", marginTop: "14px", lineHeight: 1.6 }}>
+            Track real-time campus recruitment drives, analyze your placement readiness score, build ATS-optimized resumes, and practice with our smart AI mock coaches.
+          </p>
+        </div>
+        
+        <div style={{ zIndex: 1 }}>
+          <span style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+            College Campus Placement Portal · 2026
+          </span>
+        </div>
+      </div>
+
+      {/* Right panel: auth card wrapper */}
+      <div className="login-form-container" style={{
+        display: "grid",
+        placeItems: "center",
+        padding: "40px 24px",
+        width: "100%",
+        overflowY: "auto"
+      }}>
+        <div className="login-card card" style={{
+          border: 0,
+          background: "transparent",
+          boxShadow: "none",
+          width: "min(400px, 100%)",
+          padding: 0
+        }}>
+          {/* Logo visible only on mobile/tablet */}
+          <div className="brand mobile-only-logo" style={{ marginBottom: "20px" }}>
+            <div className="brand-mark"><Command size={20} /></div>
+            <span>PlaceTrack <b style={{ color: "var(--secondary)" }}>AI</b></span>
+          </div>
+
+          <span className="eyebrow">Authentication Portal</span>
+          <h1 style={{ fontSize: "28px", fontWeight: 800, margin: "6px 0 10px" }}>
+            {mode === "signin" ? "Login to your account" : "Create your account"}
+          </h1>
+          <p className="section-copy" style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 16px" }}>
+            {mode === "signin" ? "Enter your email and password to access your placement dashboard." : "Choose your role and fill in your details to get started."}
+          </p>
+          
+          {errorMsg && (
+            <div className="login-error-message">
+              ⚠️ {errorMsg}
             </div>
-            <label>Name<input value={name} placeholder="Your full name" onChange={(e) => { setName(e.target.value); setErrorMsg(""); }} /></label>
-            {role === "STUDENT" && <>
-              <label>Branch
-                <select value={branch} onChange={(e) => { setBranch(e.target.value); setErrorMsg(""); }}>
-                  {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-                </select>
-              </label>
-              <label>CGPA<input value={cgpa} placeholder="e.g. 8.2" onChange={(e) => { setCgpa(e.target.value); setErrorMsg(""); }} /></label>
-              <SkillsSelector selected={selectedSkills} onChange={(skills) => { setSelectedSkills(skills); setErrorMsg(""); }} />
+          )}
+
+          <div className="auth-tabs">
+            <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
+            <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
+          </div>
+          
+          <form onSubmit={(e) => { e.preventDefault(); submitAuth(); }} style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
+            {mode === "signup" && <>
+              <div>
+                <label style={{ display: "block", marginBottom: "6px" }}>I am a</label>
+                <div className="role-selector">
+                  <button
+                    type="button"
+                    className={role === "STUDENT" ? "role-btn active" : "role-btn"}
+                    onClick={() => setRole("STUDENT")}
+                  >
+                    🎓 Student
+                  </button>
+                  <button
+                    type="button"
+                    className={role === "COORDINATOR" ? "role-btn active" : "role-btn"}
+                    onClick={() => setRole("COORDINATOR")}
+                  >
+                    🏢 Coordinator
+                  </button>
+                </div>
+              </div>
+              <label>Name<input value={name} placeholder="Your full name" onChange={(e) => { setName(e.target.value); setErrorMsg(""); }} /></label>
+              {role === "STUDENT" && <>
+                <label>Branch
+                  <select value={branch} onChange={(e) => { setBranch(e.target.value); setErrorMsg(""); }}>
+                    {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                  </select>
+                </label>
+                <label>CGPA<input value={cgpa} placeholder="e.g. 8.2" onChange={(e) => { setCgpa(e.target.value); setErrorMsg(""); }} /></label>
+                <SkillsSelector selected={selectedSkills} onChange={(skills) => { setSelectedSkills(skills); setErrorMsg(""); }} />
+              </>}
+              {role === "COORDINATOR" && <>
+                <label>Department
+                  <select value={branch} onChange={(e) => { setBranch(e.target.value); setErrorMsg(""); }}>
+                    {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                  </select>
+                </label>
+              </>}
             </>}
-            {role === "COORDINATOR" && <>
-              <label>Department
-                <select value={branch} onChange={(e) => { setBranch(e.target.value); setErrorMsg(""); }}>
-                  {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-                </select>
-              </label>
-            </>}
-          </>}
-          <label>Email<input value={email} placeholder="your@email.com" autoComplete="off" onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} /></label>
-          <label>Password<input type="text" className="no-autofill-password" value={password} placeholder="Password" autoComplete="off" onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }} /></label>
-          <button className="primary-button" disabled={loading} type="submit">
-            {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
-          </button>
-          <button className="ghost-button" type="button" onClick={onToggleTheme}>{dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme</button>
-        </form>
+            
+            <label>Email<input value={email} placeholder="your@email.com" autoComplete="off" onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} /></label>
+            <label>Password<input type="text" className="no-autofill-password" value={password} placeholder="Password" autoComplete="off" onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }} /></label>
+            
+            <button className="primary-button" disabled={loading} type="submit" style={{ padding: "12px 14px", fontSize: "12px", width: "100%", cursor: "pointer" }}>
+              {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
+            </button>
+            <button className="ghost-button" type="button" onClick={onToggleTheme} style={{ width: "100%", justifyContent: "center" }}>
+              {dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme
+            </button>
+          </form>
+
+          {/* Quick Demo Credential Pills */}
+          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--line)" }}>
+            <span style={{ display: "block", fontSize: "10px", fontWeight: 850, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "10px" }}>
+              Quick Demo Accounts
+            </span>
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              {demoAccounts.map((acc) => (
+                <button
+                  key={acc.label}
+                  type="button"
+                  className="secondary-button"
+                  style={{ padding: "6px 12px", fontSize: "11px", borderRadius: "8px", cursor: "pointer" }}
+                  onClick={() => {
+                    setEmail(acc.email);
+                    setPassword(acc.password);
+                    setMode("signin");
+                    setErrorMsg("");
+                  }}
+                >
+                  👤 {acc.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );
