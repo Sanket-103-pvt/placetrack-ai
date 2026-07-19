@@ -11,6 +11,8 @@
   "dependencies": {
     "framer-motion": "^12.18.1",
     "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.517.0",
     "next": "^15.3.4",
     "react": "^19.1.0",

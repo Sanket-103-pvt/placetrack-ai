@@ -5,7 +5,7 @@ import type { ElementType, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowUpRight, Bell, BookOpenCheck, Bookmark, BriefcaseBusiness, Building2, CalendarDays, CheckCircle2,
-  CircleUserRound, Command, FileScan, Gauge, GraduationCap, LayoutDashboard, Loader2, LogOut,
+  CircleUserRound, Command, Download, FileScan, Gauge, GraduationCap, LayoutDashboard, Loader2, LogOut,
   Menu, Moon, Plus, RotateCw, Search, Send, Share2, Sparkles, Sun, Target, Trophy, Upload, Users, X
 } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -23,8 +23,9 @@ import OpportunityCardSkeleton from "./ui/OpportunityCardSkeleton";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
+import ExportCenter from "./ExportCenter";
 
-type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users" | "Practice";
+type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users" | "Practice" | "Export Center";
 
 type Drive = {
   id: string;
@@ -112,7 +113,8 @@ const navIcons: Record<View, ElementType> = {
   "Drive Creator": Plus,
   Analytics: Gauge,
   Users: Users,
-  Practice: Target
+  Practice: Target,
+  "Export Center": Download,
 };
 
 const MOCK_DRIVES: Drive[] = [
@@ -364,6 +366,7 @@ export function Dashboard() {
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
     if (role === "STUDENT") base.push("Interview", "Practice");
     if (role === "ADMIN") base.push("Users");
+    base.push("Export Center");
     return base;
   }, [role]);
 
@@ -686,6 +689,7 @@ export function Dashboard() {
             {view === "Analytics" && <Analytics dashboard={dashboard} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
             {view === "Practice" && <PracticeView token={token} flash={flash} />}
+            {view === "Export Center" && <ExportCenter token={token} role={role} flash={flash} />}
           </motion.div>
         </AnimatePresence>
       </section>
