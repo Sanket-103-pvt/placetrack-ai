@@ -11,6 +11,73 @@ export const drivesRouter = Router();
 
 drivesRouter.use(authenticate);
 
+// ─── Advanced Multi-Condition Filter Search ───────────────────────────────────
+// Supports: branch, cgpa, minPkg, maxPkg, gradYear, company, status
+// Skills filtering is client-side (no requiredSkills column on PlacementDrive)
+drivesRouter.get("/search", async (request, response) => {
+  const { branch, cgpa, minPkg, maxPkg, gradYear, company, status } = request.query;
+
+  // Build Prisma WHERE clause dynamically — only include defined filters
+  const where: Record<string, unknown> = {};
+
+  if (branch && typeof branch === "string") {
+    where.allowedBranches = { has: branch };
+  }
+  if (cgpa && !isNaN(Number(cgpa))) {
+    // student CGPA must meet drive's minCgpa: student.cgpa >= drive.minCgpa ↔ drive.minCgpa <= student.cgpa
+    where.minCgpa = { lte: Number(cgpa) };
+  }
+  if (minPkg && !isNaN(Number(minPkg))) {
+    where.package = { ...((where.package as object) ?? {}), gte: Number(minPkg) };
+  }
+  if (maxPkg && !isNaN(Number(maxPkg))) {
+    where.package = { ...((where.package as object) ?? {}), lte: Number(maxPkg) };
+  }
+  if (gradYear && !isNaN(Number(gradYear))) {
+    where.graduationYear = { equals: Number(gradYear) };
+  }
+  if (company && typeof company === "string") {
+    where.company = { name: { contains: company, mode: "insensitive" } };
+  }
+  if (status && typeof status === "string") {
+    where.status = status;
+  } else if (request.auth!.role === "STUDENT") {
+    // Students only see open drives by default
+    where.status = "OPEN";
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: request.auth!.userId },
+      include: { student: true }
+    });
+    const appliedDriveIds = user?.student
+      ? new Set(
+          (await prisma.application.findMany({
+            where: { studentId: user.student.id },
+            select: { driveId: true }
+          })).map((item) => item.driveId)
+        )
+      : new Set<string>();
+
+    const drives = await prisma.placementDrive.findMany({
+      where,
+      include: { company: true, _count: { select: { applications: true } } },
+      orderBy: { package: "desc" }
+    });
+
+    const data = drives.map((drive) => ({
+      ...drive,
+      eligibility: user?.student ? checkEligibility(user.student, drive) : null,
+      alreadyApplied: appliedDriveIds.has(drive.id)
+    }));
+
+    response.json(data);
+  } catch (error) {
+    response.status(500).json({ error: "Filter query failed", detail: String(error) });
+  }
+});
+
 drivesRouter.get("/", async (request, response) => {
   const user = await prisma.user.findUnique({ where: { id: request.auth!.userId }, include: { student: true } });
   const appliedDriveIds = user?.student
