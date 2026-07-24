@@ -69,3 +69,54 @@ export const demoAccounts = [
   { label: "Coordinator", email: "coordinator@placetrack.ai", password: "Demo@123" },
   { label: "Admin", email: "admin@placetrack.ai", password: "Demo@123" }
 ];
+
+// ─── Export Center helpers ─────────────────────────────────────────────────────
+
+export type ExportReportType = "applications" | "students" | "drives" | "summary";
+export type ExportFormat = "csv" | "json" | "pdf";
+
+/**
+ * Download a CSV or JSON report directly from the backend.
+ * Triggers a browser file download.
+ */
+export async function downloadExport(
+  reportType: ExportReportType,
+  format: "csv" | "json",
+  token: string
+): Promise<void> {
+  const path = `/api/reports/${reportType}.${format}`;
+  const response = await fetch(`${API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    let msg = "Export failed";
+    try { msg = JSON.parse(text).error ?? msg; } catch { /* ignore */ }
+    throw new Error(msg);
+  }
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const match = disposition.match(/filename="([^"]+)"/);
+  a.href = url;
+  a.download = match?.[1] ?? `placetrack-${reportType}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Fetch export data as parsed JSON — used for client-side PDF generation.
+ */
+export async function fetchExportData(
+  reportType: ExportReportType,
+  token: string
+): Promise<{ generatedAt: string; count?: number; data?: unknown[]; [key: string]: unknown }> {
+  const path = reportType === "summary"
+    ? "/api/reports/summary.json"
+    : `/api/reports/${reportType}.json`;
+  return api(path, token);
+}
