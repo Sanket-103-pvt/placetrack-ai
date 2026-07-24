@@ -2399,22 +2399,12 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
     formData.append("resume", file);
 
     try {
-      // Direct call to your backend file parser endpoint
-      const res = await fetch("/api/ai/resume/upload", {
+      // Call backend file parser endpoint using api helper
+      const data = await api<any>("/api/ai/resume/upload", token, {
         method: "POST",
-        headers: {
-          // Pass authorization token down securely from user state
-          "Authorization": `Bearer ${token}`
-        },
         body: formData,
       });
 
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error || "Failed to analyze document.");
-      }
-
-      const data = await res.json();
       setResult(data);
       flash("Resume analyzed successfully!");
     } catch (error: any) {
