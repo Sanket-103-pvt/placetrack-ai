@@ -313,3 +313,78 @@ reportsRouter.get("/summary.json", async (request, response) => {
   );
   response.json(payload);
 });
+
+// ─── Interactive Analytics Groupings ──────────────────────────────────────────
+
+reportsRouter.get("/analytics", async (request, response) => {
+  const [applications, drives, students] = await Promise.all([
+    prisma.application.findMany({
+      select: { appliedAt: true, status: true },
+    }),
+    prisma.placementDrive.findMany({
+      select: { package: true, status: true },
+    }),
+    prisma.student.findMany({
+      select: { branch: true, applications: { select: { status: true } } },
+    }),
+  ]);
+
+  // Group applications by Month (YYYY-MM)
+  const trendsMap: Record<string, { month: string; applications: number; placements: number }> = {};
+  applications.forEach((app) => {
+    const date = new Date(app.appliedAt);
+    const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    if (!trendsMap[monthKey]) {
+      trendsMap[monthKey] = { month: monthKey, applications: 0, placements: 0 };
+    }
+    trendsMap[monthKey].applications++;
+    if (app.status === "SELECTED") {
+      trendsMap[monthKey].placements++;
+    }
+  });
+
+  const historicalTrends = Object.values(trendsMap).sort((a, b) => a.month.localeCompare(b.month));
+
+  // Package distribution ranges
+  const packageDistribution = {
+    under5: 0,
+    from5to10: 0,
+    from10to15: 0,
+    above15: 0,
+  };
+  drives.forEach((d) => {
+    const p = d.package;
+    if (p < 5) packageDistribution.under5++;
+    else if (p < 10) packageDistribution.from5to10++;
+    else if (p < 15) packageDistribution.from10to15++;
+    else packageDistribution.above15++;
+  });
+
+  // Selection rates per branch
+  const branchSummaryMap: Record<string, { branch: string; total: number; placed: number }> = {};
+  students.forEach((s) => {
+    const isPlaced = s.applications.some((app) => app.status === "SELECTED");
+    if (!branchSummaryMap[s.branch]) {
+      branchSummaryMap[s.branch] = { branch: s.branch, total: 0, placed: 0 };
+    }
+    branchSummaryMap[s.branch].total++;
+    if (isPlaced) {
+      branchSummaryMap[s.branch].placed++;
+    }
+  });
+
+  const departmentPlacements = Object.values(branchSummaryMap).map((b) => ({
+    branch: b.branch,
+    totalStudents: b.total,
+    placedStudents: b.placed,
+    placementRate: b.total > 0 ? Math.round((b.placed / b.total) * 100) : 0,
+  }));
+
+  await audit(request.auth!.userId, "EXPORT", "analytics-data", {});
+
+  response.json({
+    historicalTrends,
+    packageDistribution,
+    departmentPlacements,
+  });
+});
