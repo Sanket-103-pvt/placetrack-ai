@@ -685,7 +685,7 @@ export function Dashboard() {
 
   // Client-side search + advanced filter conditions
   const filteredDrives = useMemo(() => {
-    let result = drivesWithEligibility;
+    let result: Drive[] = drivesWithEligibility;
     // Global search bar (used on Overview / Aptitude tabs)
     if (searchQuery) {
       const q = searchQuery.toLowerCase();

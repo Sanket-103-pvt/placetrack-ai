@@ -218,7 +218,7 @@ reportsRouter.get("/students.json", async (request, response) => {
 // ─── Drives ───────────────────────────────────────────────────────────────────
 
 reportsRouter.get("/drives.csv", async (request, response) => {
-  const drives = await prisma.drive.findMany({
+  const drives = await prisma.placementDrive.findMany({
     include: {
       company: true,
       _count: { select: { applications: true } },
@@ -238,7 +238,7 @@ reportsRouter.get("/drives.csv", async (request, response) => {
 });
 
 reportsRouter.get("/drives.json", async (request, response) => {
-  const drives = await prisma.drive.findMany({
+  const drives = await prisma.placementDrive.findMany({
     include: {
       company: true,
       _count: { select: { applications: true } },
@@ -269,11 +269,11 @@ reportsRouter.get("/summary.json", async (request, response) => {
     drives,
   ] = await Promise.all([
     prisma.student.count(),
-    prisma.drive.count(),
+    prisma.placementDrive.count(),
     prisma.application.count(),
     prisma.application.count({ where: { status: "SELECTED" } }),
     prisma.student.aggregate({ _avg: { cgpa: true } }),
-    prisma.drive.findMany({
+    prisma.placementDrive.findMany({
       include: { company: true, _count: { select: { applications: true } } },
       where: { status: { in: ["OPEN", "COMPLETED"] } },
     }),
@@ -297,7 +297,7 @@ reportsRouter.get("/summary.json", async (request, response) => {
       placementRate,
       averageCgpa: Number((avgCgpa._avg.cgpa ?? 0).toFixed(2)),
     },
-    drives: drives.map((d) => ({
+    drives: drives.map((d: any) => ({
       company: d.company.name,
       role: d.role,
       packageLpa: d.package,
