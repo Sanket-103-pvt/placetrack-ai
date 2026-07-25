@@ -41,17 +41,39 @@ aiRouter.post("/resume/upload", upload.single("resume"), async (request, respons
   let text = "";
   try {
     if (isPdf) {
+      console.log(`[ResumeUpload] Loading PDF document: ${request.file.originalname} (${request.file.size} bytes)`);
       const pdfProxy = await getDocumentProxy(new Uint8Array(request.file.buffer));
-      const extracted = await extractText(pdfProxy, { mergePages: true });
-      text = extracted.text;
+      console.log(`[ResumeUpload] PDF loaded successfully. Total pages: ${pdfProxy.numPages}`);
+      
+      let extractedText = "";
+      for (let i = 1; i <= pdfProxy.numPages; i++) {
+        const page = await pdfProxy.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str || "")
+          .join(" ");
+        extractedText += pageText + "\n";
+      }
+      text = extractedText;
+      console.log(`[ResumeUpload] Text extraction complete. Extracted characters: ${text.length}`);
+      console.log(`[ResumeUpload] Text preview: "${text.substring(0, 150).replace(/\s+/g, " ")}"`);
     } else {
       text = request.file.buffer.toString("utf8");
+      console.log(`[ResumeUpload] Loaded TXT document. Characters: ${text.length}`);
     }
-  } catch (pdfError) {
-    return response.status(422).json({ error: "Failed to parse PDF resume. Please ensure it is a valid PDF document." });
+  } catch (pdfError: any) {
+    console.error("[ResumeUpload] PDF parsing failed. Error details:", pdfError);
+    return response.status(422).json({ 
+      error: `Failed to parse PDF resume. Details: ${pdfError?.message || "Invalid PDF structure"}` 
+    });
   }
 
-  if (text.trim().length < 20) return response.status(422).json({ error: "Could not extract enough text from the resume" });
+  if (text.trim().length < 20) {
+    console.warn(`[ResumeUpload] Extracted text is too short: ${text.trim().length} chars.`);
+    return response.status(422).json({ 
+      error: `Could not extract enough text from the resume (extracted ${text.trim().length} characters). If it is a scanned image or has custom font curves, please export it with a standard Unicode text layer.` 
+    });
+  }
   
   const result = await analyzeResumeTextSmart(text);
   await prisma.resumeAnalysis.create({
