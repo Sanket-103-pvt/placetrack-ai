@@ -1,6 +1,6 @@
 import { Router } from "express";
 import multer from "multer";
-import pdf from "pdf-parse";
+import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
@@ -40,9 +40,13 @@ aiRouter.post("/resume/upload", upload.single("resume"), async (request, respons
 
   let text = "";
   try {
-    text = isPdf
-      ? (await pdf(request.file.buffer)).text
-      : request.file.buffer.toString("utf8");
+    if (isPdf) {
+      const pdfProxy = await getDocumentProxy(new Uint8Array(request.file.buffer));
+      const extracted = await extractText(pdfProxy, { mergePages: true });
+      text = extracted.text;
+    } else {
+      text = request.file.buffer.toString("utf8");
+    }
   } catch (pdfError) {
     return response.status(422).json({ error: "Failed to parse PDF resume. Please ensure it is a valid PDF document." });
   }

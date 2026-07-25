@@ -24,9 +24,9 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
-    "pdf-parse": "^1.1.4",
     "prisma": "^6.10.1",
     "socket.io": "^4.8.3",
+    "unpdf": "^1.8.0",
     "zod": "^3.25.67"
   },
   "devDependencies": {
@@ -36,7 +36,6 @@
     "@types/morgan": "^1.9.9",
     "@types/multer": "^1.4.13",
     "@types/node": "^22.15.32",
-    "@types/pdf-parse": "^1.1.5",
     "tsx": "^4.20.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
