@@ -19,6 +19,8 @@ import { notificationsRouter } from "./routes/notifications.routes.js";
 import { reportsRouter } from "./routes/reports.routes.js";
 import { testsRouter } from "./routes/tests.routes.js";
 import { questionsRouter } from "./routes/questions.routes.js";
+import { sendEmail, getEmailTemplate } from "./services/mailer.js";
+import { checkEligibility } from "./services/eligibility.js";
 
 
 const app = express();
@@ -109,7 +111,94 @@ const server = httpServer.listen(port, async () => {
   }
 });
 
+// Keep track of sent reminders in memory to prevent duplicate emails
+const sentDeadlineReminders = new Set<string>();
+
+async function checkUpcomingDriveDeadlines() {
+  try {
+    const now = new Date();
+    const targetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Find drives ending within 24 hours that are open
+    const drives = await prisma.placementDrive.findMany({
+      where: {
+        status: "OPEN",
+        deadline: {
+          gt: now,
+          lte: targetTime,
+        },
+      },
+      include: {
+        company: true,
+      },
+    });
+
+    for (const drive of drives) {
+      if (sentDeadlineReminders.has(drive.id)) continue;
+
+      console.log(`[Deadline Checker] Drive ${drive.company.name} (${drive.role}) is closing within 24 hours. Sending reminders...`);
+
+      // Find all students who haven't applied to this drive yet
+      const students = await prisma.student.findMany({
+        where: {
+          emailEnabled: true,
+          graduationYear: drive.graduationYear,
+          applications: {
+            none: {
+              driveId: drive.id,
+            },
+          },
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
+      });
+
+      for (const student of students) {
+        // Run full eligibility check
+        const eligibility = checkEligibility(student, drive);
+        if (!eligibility.eligible) continue;
+
+        const emailHtml = getEmailTemplate(
+          "Upcoming Application Deadline",
+          `<p>Dear ${student.name},</p>
+           <p>This is a friendly reminder that the application deadline for <b>${drive.company.name}</b> (Role: <b>${drive.role}</b>) is closing within 24 hours!</p>
+           <p><b>Drive Details:</b></p>
+           <ul style="padding-left: 20px; line-height: 1.8;">
+             <li><b>Deadline:</b> ${new Date(drive.deadline).toLocaleString()}</li>
+             <li><b>Package:</b> Rs ${drive.package} LPA</li>
+             <li><b>Location:</b> ${drive.location}</li>
+           </ul>
+           <p>Don't miss out on this opportunity. Please submit your application as soon as possible.</p>`
+        );
+
+        sendEmail({
+          to: student.user.email,
+          subject: `[PlaceTrack] Deadline Reminder - ${drive.company.name}`,
+          html: emailHtml,
+        }).catch((err) => console.error(`Failed to send deadline reminder to ${student.user.email}:`, err));
+      }
+
+      // Mark as reminded
+      sentDeadlineReminders.add(drive.id);
+    }
+  } catch (error) {
+    console.error("[Deadline Checker] Error running deadline check:", error);
+  }
+}
+
+// Run checks periodically (every hour)
+const deadlineCheckInterval = setInterval(checkUpcomingDriveDeadlines, 60 * 60 * 1000);
+// Run once shortly after startup
+const deadlineCheckTimeout = setTimeout(checkUpcomingDriveDeadlines, 10 * 1000);
+
 const shutdown = async () => {
+  clearInterval(deadlineCheckInterval);
+  clearTimeout(deadlineCheckTimeout);
   server.close();
   await prisma.$disconnect();
 };
