@@ -1540,8 +1540,8 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
         overflow: "hidden",
         padding: "32px",
         marginBottom: "30px",
-        background: "linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%)",
-        border: "1px solid var(--line)",
+        background: "var(--welcome-bg)",
+        border: "1px solid var(--welcome-border)",
         borderRadius: "var(--r-xl)",
         display: "flex",
         flexDirection: "column",
@@ -1582,22 +1582,22 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
               boxShadow: "0 8px 24px var(--focus)"
             }}>{initials(name)}</div>
             <div>
-              <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--primary)" }}>
+              <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--welcome-accent)" }}>
                 {role} PORTAL
               </span>
-              <h1 style={{ margin: "4px 0 0", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.025em", color: "var(--text)" }}>
+              <h1 style={{ margin: "4px 0 0", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.025em", color: "var(--welcome-text)" }}>
                 Good morning, {name}.
               </h1>
-              <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "13px" }}>
+              <p style={{ margin: "4px 0 0", color: "var(--welcome-muted)", fontSize: "13px" }}>
                 Welcome back to your workspace. Here is your campus hiring status.
               </p>
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div className="date-pill" style={{ display: "inline-flex", background: "var(--panel-2)", border: "1px solid var(--line)" }}>
+            <div className="date-pill" style={{ display: "inline-flex", background: "var(--welcome-pill-bg)", border: "1px solid var(--welcome-pill-border)", color: "var(--welcome-pill-text)" }}>
               <CalendarDays size={14} /> {currentDateString}
             </div>
-            <p style={{ margin: "6px 0 0", fontSize: "11px", color: "var(--muted)" }}>
+            <p style={{ margin: "6px 0 0", fontSize: "11px", color: "var(--welcome-muted)" }}>
               Placement Season: <b>2025-26</b>
             </p>
           </div>
@@ -1611,33 +1611,33 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
           gap: "16px",
           marginTop: "12px",
           paddingTop: "20px",
-          borderTop: "1px solid var(--line)",
+          borderTop: "1px solid var(--welcome-border)",
           zIndex: 1
         }}>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
             <div>
-              <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Readiness Score</span>
-              <strong style={{ display: "block", fontSize: "18px", color: "var(--text)", marginTop: "2px" }}>
+              <span style={{ fontSize: "10px", color: "var(--welcome-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Readiness Score</span>
+              <strong style={{ display: "block", fontSize: "18px", color: "var(--welcome-text)", marginTop: "2px" }}>
                 {Math.round(readiness?.score ?? Number(dashboard?.placementRate ?? 0) ?? 68)}%
               </strong>
             </div>
             <div>
-              <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Applications</span>
-              <strong style={{ display: "block", fontSize: "18px", color: "var(--text)", marginTop: "2px" }}>
+              <span style={{ fontSize: "10px", color: "var(--welcome-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Applications</span>
+              <strong style={{ display: "block", fontSize: "18px", color: "var(--welcome-text)", marginTop: "2px" }}>
                 {stats?.applications ?? Number(dashboard?.applications ?? applications.length)} Submitted
               </strong>
             </div>
             <div>
-              <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Hiring Partners</span>
-              <strong style={{ display: "block", fontSize: "18px", color: "var(--text)", marginTop: "2px" }}>
+              <span style={{ fontSize: "10px", color: "var(--welcome-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Hiring Partners</span>
+              <strong style={{ display: "block", fontSize: "18px", color: "var(--welcome-text)", marginTop: "2px" }}>
                 {Number(dashboard?.companies ?? drives.length)} Active
               </strong>
             </div>
           </div>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "var(--hover)", padding: "10px 14px", borderRadius: "var(--r-md)", border: "1px solid var(--line)" }}>
-            <Sparkles size={14} style={{ color: "var(--primary)" }} />
-            <span style={{ fontSize: "11px", color: "var(--primary)", fontWeight: 500 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "var(--welcome-pill-bg)", border: "1px solid var(--welcome-pill-border)", padding: "10px 14px", borderRadius: "var(--r-md)" }}>
+            <Sparkles size={14} style={{ color: "var(--welcome-accent)" }} />
+            <span style={{ fontSize: "11px", color: "var(--welcome-accent)", fontWeight: 500 }}>
               {readiness?.reasons?.[0] ?? "Keep profiles updated before every drive."}
             </span>
           </div>

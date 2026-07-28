@@ -54,6 +54,25 @@ button:disabled { cursor: not-allowed; opacity: .55; }
   --panel-3:   #242B2A;
   --sidebar:   #0D1514;
 
+  /* Welcome Hero Card Variables for Dark Mode */
+  --welcome-bg:           linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%);
+  --welcome-border:       1px solid var(--line);
+  --welcome-text:         var(--text);
+  --welcome-accent:       var(--primary);
+  --welcome-muted:        var(--muted);
+  --welcome-pill-bg:      var(--panel-2);
+  --welcome-pill-border:  var(--line);
+  --welcome-pill-text:    var(--muted);
+
+  /* Active Navigation Button variables for Dark Mode */
+  --active-nav-bg:       rgba(27, 222, 204, 0.1);
+  --active-nav-text:     var(--primary);
+  --active-nav-border:   var(--primary);
+
+  /* Sidebar Text variables */
+  --sidebar-text-color:  var(--muted);
+  --sidebar-text-hover:  var(--text-dim);
+
   /* Borders & Interactions */
   --line:      rgba(59, 74, 71, 0.8);
   --line-dim:  rgba(59, 74, 71, 0.4);
@@ -135,42 +154,67 @@ button:disabled { cursor: not-allowed; opacity: .55; }
    LIGHT MODE DESIGN TOKENS
    ═══════════════════════════════════════════════════════════════════════════════ */
 .app.light {
-  --bg:        #F0F5F4;
-  --panel:     rgba(255, 255, 255, 0.95);
-  --panel-2:   #E8EFEE;
-  --panel-3:   #DDEAE8;
-  --sidebar:   #FFFFFF;
+  /* Surface / Background Layers */
+  --bg:        #fcf9f4; /* Off-white */
+  --panel:     #ffffff; /* Pure white container lowest */
+  --panel-2:   #f6f3ee; /* Container low */
+  --panel-3:   #f0ede9; /* Container middle */
+  --sidebar:   #ffffff; /* White background sidebar in light mode */
 
-  --line:      rgba(59, 74, 71, 0.15);
-  --line-dim:  rgba(59, 74, 71, 0.08);
-  --hover:     rgba(27, 180, 168, 0.07);
-  --focus:     rgba(27, 180, 168, 0.12);
+  /* Welcome Hero Card Variables for Light Mode - matches screen.png (dark green card with white text) */
+  --welcome-bg:           linear-gradient(135deg, #003434 0%, #0f4c4c 100%); /* Deep teal */
+  --welcome-border:       1px solid rgba(255, 255, 255, 0.08);
+  --welcome-text:         #ffffff;
+  --welcome-accent:       #85bbbb;
+  --welcome-muted:        #85bbbb;
+  --welcome-pill-bg:      rgba(255, 255, 255, 0.08);
+  --welcome-pill-border:  rgba(255, 255, 255, 0.15);
+  --welcome-pill-text:    #ffffff;
 
-  --text:      #1A2120;
-  --text-dim:  #3B4A47;
-  --muted:     #6B7C79;
+  /* Active Navigation Button variables for Light Mode - soft blue highlight */
+  --active-nav-bg:       rgba(59, 130, 246, 0.08);
+  --active-nav-text:     #2563eb;
+  --active-nav-border:   #2563eb;
 
-  --primary:   #0FAA9B;
-  --primary-dim:#12C4B4;
-  --secondary: #D4614E;
-  --violet:    #6B7C79;
-  --accent:    rgba(15, 170, 155, 0.12);
+  /* Sidebar Text variables for Light Mode */
+  --sidebar-text-color:  #707978; /* Outline variant / slate */
+  --sidebar-text-hover:  #1c1c19; /* On-surface / charcoal */
 
-  --success:   #0FAA9B;
-  --warning:   #D99A2A;
-  --error:     #D4614E;
-  --info:      #2C6CB0;
+  /* Borders & Interactions */
+  --line:      #bfc8c8; /* Outline variant */
+  --line-dim:  rgba(191, 200, 200, 0.4);
+  --hover:     rgba(0, 52, 52, 0.06); /* Deep Teal low opacity */
+  --focus:     rgba(170, 54, 20, 0.12); /* Coral focus overlay */
 
-  --shadow-sm:  0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-md:  0 4px 20px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.8);
-  --shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255,255,255,0.9);
-  --shadow-glow: 0 0 20px rgba(15, 170, 155, 0.1);
+  /* Text Hierarchy */
+  --text:      #1c1c19; /* On-surface (charcoal) */
+  --text-dim:  #404848; /* On-surface-variant */
+  --muted:     #707978; /* Outline (slate gray) */
+
+  /* Brand Colors */
+  --primary:   #003434; /* Deep Teal */
+  --primary-dim:#134f4f; /* Primary-fixed-variant */
+  --secondary: #aa3614; /* Coral */
+  --violet:    #707978; /* Slate gray */
+  --accent:    rgba(0, 52, 52, 0.12);
+
+  /* Semantic */
+  --success:   #004c4c; /* Deep Teal container style */
+  --warning:   #e7a444; /* Amber tertiary */
+  --error:     #ba1a1a; /* Red error */
+  --info:      #2c6cb0;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(15, 76, 76, 0.04);
+  --shadow-md:  0 4px 12px rgba(15, 76, 76, 0.05); /* 0px 4px 12px resting shadow */
+  --shadow-lg:  0 8px 24px rgba(15, 76, 76, 0.1);  /* 0px 8px 24px active shadow */
+  --shadow-glow: 0 0 20px rgba(170, 54, 20, 0.12);
 }
 .app.light::before {
-  background: radial-gradient(circle, rgba(15, 170, 155, 0.04) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(0, 52, 52, 0.03) 0%, transparent 65%);
 }
 .app.light::after {
-  background: radial-gradient(circle, rgba(212, 97, 78, 0.02) 0%, transparent 65%);
+  background: radial-gradient(circle, rgba(170, 54, 20, 0.02) 0%, transparent 65%);
 }
 
 /* Support html.dark class too */
@@ -268,7 +312,7 @@ nav { display: grid; gap: 3px; }
 }
 nav button, .sidebar-bottom > button {
   border: 0;
-  color: var(--muted);
+  color: var(--sidebar-text-color);
   background: transparent;
   border-radius: var(--r-md);
   display: flex;
@@ -282,21 +326,21 @@ nav button, .sidebar-bottom > button {
   transition: all .2s ease;
   position: relative;
 }
-nav button:hover { background: var(--hover); color: var(--text-dim); }
+nav button:hover { background: var(--hover); color: var(--sidebar-text-hover); }
 nav button.active {
-  background: rgba(27, 222, 204, 0.1);
-  color: var(--primary);
+  background: var(--active-nav-bg);
+  color: var(--active-nav-text);
   font-weight: 600;
-  border-left: 2px solid var(--primary);
+  border-left: 2px solid var(--active-nav-border);
   padding-left: 9px;
 }
-nav button.active svg { color: var(--primary); }
+nav button.active svg { color: var(--active-nav-text); }
 nav button em {
   margin-left: auto;
   font-style: normal;
   font-size: 10px;
-  background: rgba(27, 222, 204, 0.1);
-  color: var(--primary);
+  background: var(--active-nav-bg);
+  color: var(--active-nav-text);
   border-radius: 5px;
   padding: 2px 6px;
 }
