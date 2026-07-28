@@ -1597,7 +1597,10 @@ kbd {
 /* ═══════════════════════════════════════════════════════════════════════════════
    LOGIN SPLIT LAYOUT
    ═══════════════════════════════════════════════════════════════════════════════ */
-@media (min-width: 901px) {
+/* ═══════════════════════════════════════════════════════════════════════════════
+   LOGIN SPLIT LAYOUT
+   ═══════════════════════════════════════════════════════════════════════════════ */
+@media (min-width: 769px) {
   .login-app {
     display: grid !important;
     grid-template-columns: 1.1fr 0.9fr !important;
@@ -1609,7 +1612,7 @@ kbd {
   .login-brand-panel { display: flex !important; }
   .mobile-only-logo { display: none !important; }
 }
-@media (max-width: 900px) {
+@media (max-width: 768px) {
   .login-app {
     display: grid !important;
     place-items: center !important;
@@ -1633,23 +1636,27 @@ kbd {
    RESPONSIVE — Mobile (≤768px)
    ═══════════════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
+  /* Sidebar Drawer */
   .sidebar {
     transform: translateX(-102%);
     transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
     width: 260px;
+    box-shadow: 10px 0 30px rgba(0,0,0,0.15);
   }
   .sidebar.open { transform: translateX(0); }
   .mobile-close { display: grid; position: absolute; right: 12px; top: 12px; }
-  .workspace { margin-left: 0; width: 100%; }
+  .workspace { margin-left: 0; width: 100%; max-width: 100vw; }
   .menu-button { display: grid; }
   .scrim { display: block; position: fixed; inset: 0; background: rgba(5, 8, 8, 0.7); z-index: 15; backdrop-filter: blur(4px); }
-  .content { padding: 24px 16px 50px; }
+  .content { padding: 20px 16px 50px; }
   header { padding: 0 16px; }
   .search { display: none; }
   .page-title { align-items: flex-start; flex-direction: column; }
   .date-pill { display: none; }
+
+  /* Collapse Grids */
   .hero-grid, .opportunity-grid, .analyzer-grid, .split-grid, .grid-form, .profile-form, .drive-details-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .readiness-body { gap: 14px; }
@@ -1663,16 +1670,92 @@ kbd {
   .timeline-step span { display: none; }
   .role-card-grid { grid-template-columns: 1fr 1fr; }
   .branch-checkbox-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Filter Builder Vertical Stacking */
+  .filter-builder-row {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 12px !important;
+  }
+  .filter-builder-row select, .filter-builder-row input {
+    width: 100% !important;
+  }
+  .filter-builder-row button {
+    width: 100% !important;
+  }
+
+  /* Modals to Bottom Sheets */
+  .modal-backdrop {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .drive-modal-content, .profile-modal {
+    width: 100% !important;
+    max-height: 92vh !important;
+    height: auto !important;
+    border-radius: var(--r-xl) var(--r-xl) 0 0 !important;
+    padding: 24px 16px !important;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    overflow-y: auto !important;
+  }
+
+  /* Horizontal Scrolling Tab Buttons */
+  .interview-tab-row {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .interview-tab-row::-webkit-scrollbar {
+    display: none;
+  }
+  .interview-tab {
+    flex-shrink: 0 !important;
+  }
+
+  /* Accessibility Touch Targets: Minimum 44px */
+  button, input, select, textarea, .nav button, .role-btn, .auth-tabs button, .upload-button {
+    min-height: 44px !important;
+  }
+
+  /* Mobile Typography Scale */
+  h1 {
+    font-size: 28px !important;
+    line-height: 36px !important;
+  }
+  h2 {
+    font-size: 22px !important;
+    line-height: 30px !important;
+  }
+  h3 {
+    font-size: 18px !important;
+    line-height: 24px !important;
+  }
+  .page-title h1 {
+    font-size: 26px !important;
+  }
+
+  /* Horizontal Scroll Jitter Prevention */
+  body, html {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+  }
 }
 
 @media (max-width: 480px) {
   .stats-grid, .analytics-stats { grid-template-columns: 1fr; }
   .readiness-body { align-items: flex-start; flex-direction: column; }
   .score-breakdown { margin-top: 8px; }
-  .page-title h1 { font-size: 26px; }
+  .page-title h1 { font-size: 24px !important; }
   .application-detail { padding: 16px; }
   .job-meta { flex-wrap: wrap; }
   .role-card-grid { grid-template-columns: 1fr; }
   .opportunity-grid { grid-template-columns: 1fr; }
   .drive-details-grid { grid-template-columns: 1fr 1fr; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
