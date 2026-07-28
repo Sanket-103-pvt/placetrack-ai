@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import { analyzeResumeText } from "../src/services/ai.js";
 import { checkEligibility } from "../src/services/eligibility.js";
 import { predictReadiness } from "../src/services/readiness.js";
