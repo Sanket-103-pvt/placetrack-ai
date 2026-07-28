@@ -308,16 +308,17 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
           <div
             style={{
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               borderRadius: 12,
-              background: "linear-gradient(135deg, hsl(221,83%,55%), hsl(262,83%,58%))",
+              background: "linear-gradient(135deg, var(--primary), var(--primary-dim))",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
+              color: "var(--bg)"
             }}
           >
-            <Download size={20} color="#fff" />
+            <Download size={20} color="currentColor" />
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: "-0.3px" }}>
@@ -385,15 +386,15 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
             border: "none",
             cursor: canExport ? "pointer" : "not-allowed",
             background: canExport
-              ? "linear-gradient(135deg, hsl(221,83%,55%), hsl(262,83%,58%))"
-              : "hsl(0,0%,30%)",
-            color: "#fff",
+              ? "linear-gradient(135deg, var(--primary), var(--primary-dim))"
+              : "var(--panel-3)",
+            color: canExport ? "var(--bg)" : "var(--muted)",
             fontWeight: 700,
             fontSize: 15,
             opacity: canExport ? 1 : 0.5,
             transition: "background 0.2s, opacity 0.2s",
             boxShadow: canExport
-              ? "0 4px 24px hsla(221,83%,55%,0.35)"
+              ? "var(--shadow-glow)"
               : "none",
           }}
         >
@@ -468,11 +469,11 @@ function SectionLabel({ step, label }: { step: number; label: string }) {
           width: 26,
           height: 26,
           borderRadius: "50%",
-          background: "linear-gradient(135deg, hsl(221,83%,55%), hsl(262,83%,58%))",
+          background: "linear-gradient(135deg, var(--primary), var(--primary-dim))",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "#fff",
+          color: "var(--bg)",
           fontSize: 12,
           fontWeight: 700,
           flexShrink: 0,

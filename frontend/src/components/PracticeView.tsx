@@ -187,7 +187,7 @@ export default function PracticeView({ token, flash }: { token: string | null; f
           <div style={{ display: "flex", gap: "6px" }}>
             {(["EASY", "MEDIUM", "HARD"] as const).map((diff) => {
               const active = difficultyFilter === diff;
-              const color = diff === "EASY" ? "#22C55E" : diff === "MEDIUM" ? "#F59E0B" : "#EF4444";
+              const color = diff === "EASY" ? "var(--success)" : diff === "MEDIUM" ? "var(--warning)" : "var(--error)";
               return (
                 <button
                   key={diff}

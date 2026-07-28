@@ -844,9 +844,9 @@ function SkillsSelector({ selected, onChange }: { selected: string[]; onChange: 
                 padding: "4px 10px",
                 fontSize: "12px",
                 borderRadius: "6px",
-                background: "var(--violet)",
-                color: "#FFFFFF",
-                fontWeight: 500
+                background: "var(--primary)",
+                color: "var(--bg)",
+                fontWeight: 600
               }}
             >
               {skill}
@@ -856,7 +856,7 @@ function SkillsSelector({ selected, onChange }: { selected: string[]; onChange: 
                 style={{
                   background: "transparent",
                   border: "none",
-                  color: "rgba(255,255,255,0.7)",
+                  color: "currentColor",
                   cursor: "pointer",
                   display: "inline-flex",
                   padding: 0
@@ -1361,9 +1361,7 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
         flexDirection: "column",
         justifyContent: "space-between",
         padding: "48px",
-        background: dark 
-          ? "linear-gradient(135deg, #090915 0%, #12122b 50%, #07070F 100%)"
-          : "linear-gradient(135deg, #E2EDF8 0%, #C9DDF0 50%, #DFEAF5 100%)",
+        background: "linear-gradient(135deg, var(--bg) 0%, var(--panel-2) 50%, var(--bg) 100%)",
         borderRight: "1px solid var(--line)",
         position: "relative",
         overflow: "hidden"
@@ -1371,9 +1369,7 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
         {/* Glow decoration */}
         <div style={{
           position: "absolute", top: "10%", left: "10%", width: "400px", height: "400px",
-          background: dark 
-            ? "radial-gradient(circle, rgba(136, 189, 242, 0.07) 0%, transparent 70%)"
-            : "radial-gradient(circle, rgba(44, 108, 176, 0.08) 0%, transparent 70%)",
+          background: "radial-gradient(circle, var(--focus) 0%, transparent 70%)",
           pointerEvents: "none"
         }} />
         
@@ -1544,9 +1540,9 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
         overflow: "hidden",
         padding: "32px",
         marginBottom: "30px",
-        background: "linear-gradient(135deg, rgba(26, 26, 46, 0.7) 0%, rgba(11, 11, 18, 0.8) 100%)",
-        border: "1px solid rgba(136, 189, 242, 0.15)",
-        borderRadius: "24px",
+        background: "linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-xl)",
         display: "flex",
         flexDirection: "column",
         gap: "16px"
@@ -1559,7 +1555,7 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
           width: "200px",
           height: "200px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(136, 189, 242, 0.12) 0%, transparent 70%)",
+          background: "radial-gradient(circle, var(--focus) 0%, transparent 70%)",
           pointerEvents: "none"
         }} />
         <div style={{
@@ -1569,7 +1565,7 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
           width: "150px",
           height: "150px",
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(106, 137, 167, 0.08) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(255, 154, 137, 0.04) 0%, transparent 70%)",
           pointerEvents: "none"
         }} />
 
@@ -1581,15 +1577,15 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
               borderRadius: "18px",
               fontSize: "20px",
               fontWeight: 800,
-              background: "linear-gradient(135deg, var(--secondary), var(--violet))",
-              color: "#FFFFFF",
-              boxShadow: "0 8px 24px rgba(106, 137, 167, 0.25)"
+              background: "linear-gradient(135deg, var(--primary), var(--primary-dim))",
+              color: "var(--bg)",
+              boxShadow: "0 8px 24px var(--focus)"
             }}>{initials(name)}</div>
             <div>
-              <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--secondary)" }}>
+              <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.15em", textTransform: "uppercase", color: "var(--primary)" }}>
                 {role} PORTAL
               </span>
-              <h1 style={{ margin: "4px 0 0", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.025em", color: "#FFFFFF" }}>
+              <h1 style={{ margin: "4px 0 0", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.025em", color: "var(--text)" }}>
                 Good morning, {name}.
               </h1>
               <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: "13px" }}>
@@ -1598,7 +1594,7 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div className="date-pill" style={{ display: "inline-flex", background: "rgba(255, 255, 255, 0.04)", border: "1px solid var(--line)" }}>
+            <div className="date-pill" style={{ display: "inline-flex", background: "var(--panel-2)", border: "1px solid var(--line)" }}>
               <CalendarDays size={14} /> {currentDateString}
             </div>
             <p style={{ margin: "6px 0 0", fontSize: "11px", color: "var(--muted)" }}>
@@ -1615,33 +1611,33 @@ function Overview({ role, name, dashboard, applications, drives, onNavigate, loa
           gap: "16px",
           marginTop: "12px",
           paddingTop: "20px",
-          borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+          borderTop: "1px solid var(--line)",
           zIndex: 1
         }}>
           <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
             <div>
               <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Readiness Score</span>
-              <strong style={{ display: "block", fontSize: "18px", color: "#FFFFFF", marginTop: "2px" }}>
+              <strong style={{ display: "block", fontSize: "18px", color: "var(--text)", marginTop: "2px" }}>
                 {Math.round(readiness?.score ?? Number(dashboard?.placementRate ?? 0) ?? 68)}%
               </strong>
             </div>
             <div>
               <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Applications</span>
-              <strong style={{ display: "block", fontSize: "18px", color: "#FFFFFF", marginTop: "2px" }}>
+              <strong style={{ display: "block", fontSize: "18px", color: "var(--text)", marginTop: "2px" }}>
                 {stats?.applications ?? Number(dashboard?.applications ?? applications.length)} Submitted
               </strong>
             </div>
             <div>
               <span style={{ fontSize: "10px", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Hiring Partners</span>
-              <strong style={{ display: "block", fontSize: "18px", color: "#FFFFFF", marginTop: "2px" }}>
+              <strong style={{ display: "block", fontSize: "18px", color: "var(--text)", marginTop: "2px" }}>
                 {Number(dashboard?.companies ?? drives.length)} Active
               </strong>
             </div>
           </div>
           
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(136, 189, 242, 0.06)", padding: "10px 14px", borderRadius: "12px", border: "1px solid rgba(136, 189, 242, 0.1)" }}>
-            <Sparkles size={14} style={{ color: "var(--secondary)" }} />
-            <span style={{ fontSize: "11px", color: "var(--secondary)", fontWeight: 500 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", background: "var(--hover)", padding: "10px 14px", borderRadius: "var(--r-md)", border: "1px solid var(--line)" }}>
+            <Sparkles size={14} style={{ color: "var(--primary)" }} />
+            <span style={{ fontSize: "11px", color: "var(--primary)", fontWeight: 500 }}>
               {readiness?.reasons?.[0] ?? "Keep profiles updated before every drive."}
             </span>
           </div>
@@ -1930,8 +1926,8 @@ function PlacementFilterBuilder({
             style={{
               display: "inline-flex", alignItems: "center", gap: "5px",
               padding: "5px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: 600,
-              background: "rgba(136, 189, 242, 0.06)", border: "1px solid rgba(136, 189, 242, 0.15)",
-              color: "var(--secondary)", cursor: "pointer"
+              background: "var(--hover)", border: "1px solid var(--line)",
+              color: "var(--primary)", cursor: "pointer"
             }}
           >
             <Plus size={12} /> Add Filter
@@ -1945,8 +1941,8 @@ function PlacementFilterBuilder({
               style={{
                 display: "inline-flex", alignItems: "center", gap: "5px",
                 padding: "5px 12px", borderRadius: "8px", fontSize: "11px", fontWeight: 600,
-                background: "rgba(239, 68, 68, 0.06)", border: "1px solid rgba(239, 68, 68, 0.15)",
-                color: "#EF4444", cursor: "pointer"
+                background: "rgba(255, 107, 107, 0.07)", border: "1px solid rgba(255, 107, 107, 0.2)",
+                color: "var(--error)", cursor: "pointer"
               }}
             >
               <X size={12} /> Reset
@@ -2076,20 +2072,20 @@ function PlacementFilterBuilder({
                           />
                         )}
 
-                        {/* Remove button */}
-                        <button
-                          type="button"
-                          id={`filter-remove-${idx}`}
-                          onClick={() => removeCondition(cond.id)}
-                          style={{
-                            width: "30px", height: "30px", borderRadius: "8px",
-                            background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)",
-                            color: "#EF4444", cursor: "pointer", display: "grid", placeItems: "center"
-                          }}
-                          aria-label="Remove condition"
-                        >
-                          <X size={13} />
-                        </button>
+                         {/* Remove button */}
+                         <button
+                           type="button"
+                           id={`filter-remove-${idx}`}
+                           onClick={() => removeCondition(cond.id)}
+                           style={{
+                             width: "30px", height: "30px", borderRadius: "8px",
+                             background: "rgba(255, 107, 107, 0.07)", border: "1px solid rgba(255, 107, 107, 0.2)",
+                             color: "var(--error)", cursor: "pointer", display: "grid", placeItems: "center"
+                           }}
+                           aria-label="Remove condition"
+                         >
+                           <X size={13} />
+                         </button>
                       </motion.div>
                     );
                   })}
@@ -2114,7 +2110,7 @@ function PlacementFilterBuilder({
                     <Save size={12} /> Save Preset
                   </button>
                 ) : (
-                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                   <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                     <input
                       id="filter-preset-name"
                       autoFocus
@@ -2124,13 +2120,13 @@ function PlacementFilterBuilder({
                       placeholder="Preset name…"
                       style={{
                         padding: "5px 10px", borderRadius: "8px", fontSize: "11px",
-                        background: "var(--panel)", border: "1px solid var(--secondary)",
+                        background: "var(--panel)", border: "1px solid var(--primary)",
                         color: "var(--text)", width: "130px"
                       }}
                     />
                     <button type="button" onClick={savePreset}
                       style={{ padding: "5px 10px", borderRadius: "8px", fontSize: "11px", fontWeight: 600,
-                        background: "var(--secondary)", border: "none", color: "#000", cursor: "pointer" }}
+                        background: "var(--primary)", border: "none", color: "var(--bg)", cursor: "pointer" }}
                     >Save</button>
                     <button type="button" onClick={() => { setShowPresetInput(false); setPresetName(""); }}
                       style={{ padding: "5px", borderRadius: "6px", background: "none", border: "none",
@@ -2178,7 +2174,7 @@ function PlacementFilterBuilder({
                                 {p.name} <span style={{ color: "var(--muted)", fontSize: "10px" }}>({p.conditions.length})</span>
                               </button>
                               <button type="button" onClick={() => deletePreset(p.name)}
-                                style={{ background: "none", border: "none", cursor: "pointer", color: "#EF4444", display: "flex", padding: "2px" }}>
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--error)", display: "flex", padding: "2px" }}>
                                 <X size={11} />
                               </button>
                             </div>
@@ -2248,9 +2244,9 @@ function Opportunities({
               padding: "24px",
               position: "relative",
               borderTop: `4px solid ${branding.accentColor}`,
-              background: `linear-gradient(135deg, rgba(21, 21, 31, 0.8) 0%, rgba(11, 11, 18, 0.9) 100%)`,
+              background: "linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%)",
               gap: "14px",
-              boxShadow: "0 6px 20px rgba(0, 0, 0, 0.25)"
+              boxShadow: "var(--shadow-md)"
             }}>
               {/* Glowing decorative shape inside the card */}
               <div style={{
@@ -2268,9 +2264,9 @@ function Opportunities({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 {hasEligibility && (
                   <div className="status-badge" style={{
-                    color: eligible ? "#22C55E" : "#EF4444",
-                    background: eligible ? "rgba(34, 197, 94, 0.12)" : "rgba(239, 68, 68, 0.12)",
-                    border: eligible ? "1px solid rgba(34, 197, 94, 0.25)" : "1px solid rgba(239, 68, 68, 0.25)",
+                    color: eligible ? "var(--success)" : "var(--error)",
+                    background: eligible ? "rgba(27, 222, 204, 0.1)" : "rgba(255, 107, 107, 0.1)",
+                    border: eligible ? "1px solid rgba(27, 222, 204, 0.2)" : "1px solid rgba(255, 107, 107, 0.2)",
                     display: "inline-flex",
                     alignItems: "center",
                     gap: "4px",
@@ -2284,8 +2280,8 @@ function Opportunities({
                   </div>
                 )}
                 <span className="deadline-chip" style={{
-                  color: "#F59E0B",
-                  background: "rgba(245, 158, 11, 0.12)",
+                  color: "var(--warning)",
+                  background: "rgba(247, 189, 78, 0.1)",
                   padding: "4px 8px",
                   borderRadius: "6px",
                   fontSize: "9px",
@@ -2312,7 +2308,7 @@ function Opportunities({
                   {initials(drive.company.name)}
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, font: "700 17px 'Manrope'", color: "#FFFFFF" }}>{drive.company.name}</h3>
+                  <h3 style={{ margin: 0, font: "700 17px 'Manrope'", color: "var(--text)" }}>{drive.company.name}</h3>
                   <p style={{ margin: "2px 0 0", color: "var(--muted)", fontSize: "12px", fontWeight: 500 }}>{drive.role}</p>
                 </div>
               </div>
@@ -2338,7 +2334,7 @@ function Opportunities({
               {/* Allowed branches */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                 {(drive.allowedBranches || []).slice(0, 3).map((br) => (
-                  <span key={br} style={{ fontSize: "8px", background: "rgba(136, 189, 242, 0.06)", color: "var(--secondary)", padding: "2px 6px", borderRadius: "4px", border: "1px solid rgba(136, 189, 242, 0.1)" }}>
+                  <span key={br} style={{ fontSize: "8px", background: "var(--hover)", color: "var(--primary)", padding: "2px 6px", borderRadius: "4px", border: "1px solid var(--line)" }}>
                     {br}
                   </span>
                 ))}
@@ -2850,7 +2846,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
           const displayIndex = activeTab === "technical" ? index + 1 : index + 16;
           return (
             <div className={`card insight insight-row-clickable ${isSelected ? "selected-question" : ""}`} key={question} onClick={() => setSelectedQuestion(isSelected ? null : question)}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "#f59e0b" : "var(--violet)", minWidth: "28px" }}>{String(displayIndex).padStart(2, "0")}</span>
+              <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "var(--warning)" : "var(--primary)", minWidth: "28px" }}>{String(displayIndex).padStart(2, "0")}</span>
               <div style={{ width: "100%" }}>
                 <strong style={{ fontSize: "14px", lineHeight: "1.5" }}>{question}</strong>
                 <p style={{ fontSize: "12px", marginTop: "2px" }}>{activeTab === "soft" ? "Soft skill / behavioral" : "Technical"} · Click to practice</p>
@@ -2864,7 +2860,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
                       <div className="interview-feedback-box">
                         <div className="interview-feedback-header">
                           <strong>AI Evaluation Feedback</strong>
-                          <span style={{ color: evaluation.score >= 7 ? "#22c55e" : evaluation.score >= 5 ? "#f59e0b" : "#ef4444" }}>Score: {evaluation.score}/10</span>
+                          <span style={{ color: evaluation.score >= 7 ? "var(--success)" : evaluation.score >= 5 ? "var(--warning)" : "var(--error)" }}>Score: {evaluation.score}/10</span>
                         </div>
                         <div className="feedback-points-list strengths">
                           <span>✅ Strengths</span>
@@ -2995,7 +2991,7 @@ function Analytics({ token, dashboard }: { token: string | null; dashboard: Dash
   }, [token]);
 
   const rows = (dashboard?.branchPerformance as Array<{ branch: string; students: number; readiness: number }> | undefined) ?? [];
-  const COLORS = ["#88BDF2", "#50d9c7", "#ffc56c", "#6A89A7"];
+  const COLORS = ["var(--info)", "var(--primary)", "var(--warning)", "var(--muted)"];
 
   const pieData = useMemo(() => {
     if (!analyticsData?.packageDistribution) return [];
@@ -3076,7 +3072,7 @@ function Analytics({ token, dashboard }: { token: string | null; dashboard: Dash
                     <XAxis dataKey="branch" axisLine={false} tickLine={false} tick={{ fill: "var(--muted)", fontSize: 10 }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted)", fontSize: 10 }} />
                     <Tooltip cursor={{ fill: "var(--hover)" }} contentStyle={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12 }} />
-                    <Bar dataKey="readiness" fill="var(--violet)" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="readiness" fill="var(--secondary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </section>
@@ -3091,7 +3087,7 @@ function Analytics({ token, dashboard }: { token: string | null; dashboard: Dash
                     <XAxis dataKey="branch" axisLine={false} tickLine={false} tick={{ fill: "var(--muted)", fontSize: 10 }} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted)", fontSize: 10 }} />
                     <Tooltip cursor={{ fill: "var(--hover)" }} contentStyle={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12 }} />
-                    <Bar dataKey="placementRate" fill="#50d9c7" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="placementRate" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </section>
@@ -3111,8 +3107,8 @@ function Analytics({ token, dashboard }: { token: string | null; dashboard: Dash
                       <stop offset="95%" stopColor="var(--secondary)" stopOpacity={0}/>
                     </linearGradient>
                     <linearGradient id="colorPlacements" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#50d9c7" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#50d9c7" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.2}/>
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--line)" />
@@ -3121,7 +3117,7 @@ function Analytics({ token, dashboard }: { token: string | null; dashboard: Dash
                   <Tooltip contentStyle={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12 }} />
                   <Legend />
                   <Area type="monotone" name="Total Applications" dataKey="applications" stroke="var(--secondary)" fillOpacity={1} fill="url(#colorApps)" strokeWidth={2} />
-                  <Area type="monotone" name="Selections (Placed)" dataKey="placements" stroke="#50d9c7" fillOpacity={1} fill="url(#colorPlacements)" strokeWidth={2} />
+                  <Area type="monotone" name="Selections (Placed)" dataKey="placements" stroke="var(--primary)" fillOpacity={1} fill="url(#colorPlacements)" strokeWidth={2} />
                 </AreaChart>
               </ResponsiveContainer>
             </section>
@@ -3301,9 +3297,13 @@ function Stat({ icon, value, label, sub, tone, trend }: { icon: ReactNode; value
           <strong style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.03em" }}>{value}</strong>
           {trend && (
             <span style={{
-              fontSize: "9px",
-              fontWeight: 700,
-              color: trend.startsWith("▲") ? "#22C55E" : "var(--muted)",
+              fontSize: "10px",
+              fontWeight: 800,
+              color: trend.startsWith("▲") ? "var(--success)" : "var(--muted)",
+              fontFamily: "var(--font-mono)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "2px",
               background: trend.startsWith("▲") ? "rgba(34, 197, 94, 0.12)" : "rgba(255, 255, 255, 0.05)",
               padding: "2px 6px",
               borderRadius: "6px",
@@ -3460,7 +3460,7 @@ function UsersManager({ token, flash, users, setUsers }: UsersManagerProps) {
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
               <button className="secondary-button" onClick={() => setEditingUser(u)}>Edit</button>
-              <button className="secondary-button" style={{ color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.2)" }} disabled={deletingId === u.id} onClick={() => handleDeleteUser(u.id)}>
+              <button className="secondary-button" style={{ color: "var(--error)", borderColor: "rgba(255, 107, 107, 0.2)" }} disabled={deletingId === u.id} onClick={() => handleDeleteUser(u.id)}>
                 {deletingId === u.id ? <Loader2 className="spin" size={12} /> : "Delete"}
               </button>
             </div>
