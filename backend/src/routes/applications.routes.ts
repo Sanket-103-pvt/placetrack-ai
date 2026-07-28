@@ -6,6 +6,7 @@ import { audit } from "../lib/audit.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { checkEligibility } from "../services/eligibility.js";
 import { emitToUser } from "../lib/socket.js";
+import { sendEmail, getEmailTemplate } from "../services/mailer.js";
 
 export const applicationsRouter = Router();
 applicationsRouter.use(authenticate);
@@ -47,7 +48,10 @@ applicationsRouter.post("/", authorize(UserRole.STUDENT), async (request, respon
 
 applicationsRouter.patch("/:id/status", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
   const input = z.object({ status: z.nativeEnum(ApplicationStatus), note: z.string().max(500).optional() }).parse(request.body);
-  const current = await prisma.application.findUnique({ where: { id: String(request.params.id) }, include: { student: true, drive: { include: { company: true } } } });
+  const current = await prisma.application.findUnique({
+    where: { id: String(request.params.id) },
+    include: { student: { include: { user: { select: { email: true } } } }, drive: { include: { company: true } } }
+  });
   if (!current) return response.status(404).json({ error: "Application not found" });
   const timeline = Array.isArray(current.timeline) ? current.timeline : [];
   const application = await prisma.application.update({
@@ -61,6 +65,26 @@ applicationsRouter.patch("/:id/status", authorize(UserRole.COORDINATOR, UserRole
   
   await audit(request.auth!.userId, "UPDATE_STATUS", "application", { applicationId: current.id, status: input.status });
   emitToUser(current.student.userId, "application:status_changed", notification);
+
+  // Send status update email if SELECTED or REJECTED
+  if (current.student.emailEnabled && (input.status === ApplicationStatus.SELECTED || input.status === ApplicationStatus.REJECTED)) {
+    const isSelected = input.status === ApplicationStatus.SELECTED;
+    const title = isSelected ? "Congratulations! You are Selected" : "Application Update";
+    const bodyContent = isSelected
+      ? `<p>Dear ${current.student.name},</p>
+         <p>We are thrilled to inform you that you have been <b>selected</b> for the role of <b>${current.drive.role}</b> at <b>${current.drive.company.name}</b>!</p>
+         <p>Congratulations on your placement! The coordinator will get in touch with you regarding the next steps.</p>`
+      : `<p>Dear ${current.student.name},</p>
+         <p>Thank you for your interest in the <b>${current.drive.role}</b> position at <b>${current.drive.company.name}</b>.</p>
+         <p>Unfortunately, you were not selected for this role. We appreciate the time and effort you put into the application process. Keep preparing and best of luck for future opportunities!</p>`;
+
+    const emailHtml = getEmailTemplate(title, bodyContent);
+    sendEmail({
+      to: current.student.user.email,
+      subject: `[PlaceTrack] ${title} - ${current.drive.company.name}`,
+      html: emailHtml
+    }).catch((err) => console.error("Failed to send status update email:", err));
+  }
   
   response.json(application);
 });
@@ -69,7 +93,10 @@ applicationsRouter.post("/:id/interview", authorize(UserRole.COORDINATOR, UserRo
   const input = z.object({
     dateTime: z.coerce.date(), mode: z.enum(["ONLINE", "OFFLINE"]), locationOrLink: z.string().min(3)
   }).parse(request.body);
-  const application = await prisma.application.findUnique({ where: { id: String(request.params.id) }, include: { student: true, drive: { include: { company: true } } } });
+  const application = await prisma.application.findUnique({
+    where: { id: String(request.params.id) },
+    include: { student: { include: { user: { select: { email: true } } } }, drive: { include: { company: true } } }
+  });
   if (!application) return response.status(404).json({ error: "Application not found" });
   const interview = await prisma.interview.upsert({
     where: { applicationId: application.id },
@@ -83,6 +110,27 @@ applicationsRouter.post("/:id/interview", authorize(UserRole.COORDINATOR, UserRo
   
   await audit(request.auth!.userId, "SCHEDULE", "interview", { interviewId: interview.id });
   emitToUser(application.student.userId, "interview:scheduled", notification);
+
+  // Send interview scheduled email
+  if (application.student.emailEnabled) {
+    const emailHtml = getEmailTemplate(
+      "Interview Scheduled",
+      `<p>Dear ${application.student.name},</p>
+       <p>An interview has been scheduled for your application at <b>${application.drive.company.name}</b> for the role of <b>${application.drive.role}</b>.</p>
+       <p><b>Details:</b></p>
+       <ul style="padding-left: 20px; line-height: 1.8;">
+         <li><b>Date & Time:</b> ${input.dateTime.toLocaleString()}</li>
+         <li><b>Mode:</b> ${input.mode}</li>
+         <li><b>Location / Link:</b> <a href="${input.locationOrLink.startsWith("http") ? input.locationOrLink : "#"}">${input.locationOrLink}</a></li>
+       </ul>
+       <p>Please prepare well and join on time.</p>`
+    );
+    sendEmail({
+      to: application.student.user.email,
+      subject: `[PlaceTrack] Interview Scheduled - ${application.drive.company.name}`,
+      html: emailHtml
+    }).catch((err) => console.error("Failed to send interview email:", err));
+  }
   
   response.status(201).json(interview);
 });

@@ -1094,7 +1094,8 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
     phone: student?.phone ?? "",
     linkedinUrl: student?.linkedinUrl ?? "",
     projectsCount: String(student?.projectsCount ?? 0),
-    internshipsCount: String(student?.internshipsCount ?? 0)
+    internshipsCount: String(student?.internshipsCount ?? 0),
+    emailEnabled: student?.emailEnabled ?? true
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
@@ -1118,7 +1119,8 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
           phone: form.phone || null,
           linkedinUrl: form.linkedinUrl || null,
           projectsCount: Number(form.projectsCount),
-          internshipsCount: Number(form.internshipsCount)
+          internshipsCount: Number(form.internshipsCount),
+          emailEnabled: form.emailEnabled
         })
       });
       await onSaved();
@@ -1154,6 +1156,15 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
             <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
             <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
             <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
+            <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "span 2", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
+              <input
+                type="checkbox"
+                checked={form.emailEnabled}
+                onChange={(event) => setForm((old) => ({ ...old, emailEnabled: event.target.checked }))}
+                style={{ width: "18px", height: "18px", cursor: "pointer" }}
+              />
+              <span>Receive transactional email alerts for critical events (interviews, selection status, upcoming deadlines).</span>
+            </label>
             <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
           </div>
           <div className="inline-actions" style={{ marginTop: "24px" }}>
@@ -1200,7 +1211,8 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
     phone: student?.phone ?? "",
     linkedinUrl: student?.linkedinUrl ?? "",
     projectsCount: String(student?.projectsCount ?? 0),
-    internshipsCount: String(student?.internshipsCount ?? 0)
+    internshipsCount: String(student?.internshipsCount ?? 0),
+    emailEnabled: student?.emailEnabled ?? true
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
   const [saving, setSaving] = useState(false);
@@ -1229,7 +1241,8 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
           phone: form.phone || null,
           linkedinUrl: form.linkedinUrl || null,
           projectsCount: Number(form.projectsCount),
-          internshipsCount: Number(form.internshipsCount)
+          internshipsCount: Number(form.internshipsCount),
+          emailEnabled: form.emailEnabled
         })
       });
       await onSaved();
@@ -1268,6 +1281,15 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
         <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
         <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
         <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
+        <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "span 2", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
+          <input
+            type="checkbox"
+            checked={form.emailEnabled}
+            onChange={(event) => setForm((old) => ({ ...old, emailEnabled: event.target.checked }))}
+            style={{ width: "18px", height: "18px", cursor: "pointer" }}
+          />
+          <span>Receive transactional email alerts for critical events (interviews, selection status, upcoming deadlines).</span>
+        </label>
         <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
       </div>
       <div className="inline-actions" style={{ marginTop: "24px" }}>

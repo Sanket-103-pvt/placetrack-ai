@@ -107,7 +107,8 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
     phone: z.string().nullable().optional(),
     linkedinUrl: z.string().nullable().optional(),
     projectsCount: z.number().int().min(0).optional(),
-    internshipsCount: z.number().int().min(0).optional()
+    internshipsCount: z.number().int().min(0).optional(),
+    emailEnabled: z.boolean().optional()
   }).parse(request.body);
 
   const student = await prisma.student.findUnique({ where: { userId: request.auth!.userId } });

@@ -62,6 +62,7 @@ model Student {
   linkedinUrl     String?
   projectsCount   Int           @default(0)
   internshipsCount Int          @default(0)
+  emailEnabled    Boolean       @default(true)
   applications    Application[]
   testResults     TestResult[]
 
