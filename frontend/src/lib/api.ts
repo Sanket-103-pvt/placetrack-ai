@@ -29,6 +29,7 @@ export type SessionUser = {
     internshipsCount?: number;
     resumeUrl?: string | null;
     mockTestCount?: number;
+    emailEnabled?: boolean;
   } | null;
   coordinator?: { id: string; department: string; phone?: string | null } | null;
 };
