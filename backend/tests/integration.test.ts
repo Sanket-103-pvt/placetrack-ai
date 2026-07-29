@@ -436,4 +436,67 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe("Deadline Reminders Cron Job", () => {
+    it("runs and creates in-app notifications for upcoming deadlines and dates within 24h", async () => {
+      const { runDeadlineReminders } = await import("../src/jobs/deadlineReminder.js");
+      const tomorrow = new Date(Date.now() + 12 * 60 * 60 * 1000);
+      
+      const testDrive = await prisma.placementDrive.create({
+        data: {
+          company: {
+            create: {
+              name: "CronCorp",
+              description: "Test company for cron job"
+            }
+          },
+          role: "Developer",
+          package: 10,
+          location: "Remote",
+          jobType: "Full-time",
+          description: "Cron test drive description...",
+          minCgpa: 6.0,
+          allowedBranches: ["Computer Engineering"],
+          maxBacklogs: 2,
+          graduationYear: 2027,
+          deadline: tomorrow,
+          testDate: tomorrow,
+          interviewDate: tomorrow,
+          status: "OPEN"
+        },
+        include: { company: true }
+      });
+
+      const appRecord = await prisma.application.create({
+        data: {
+          studentId,
+          driveId: testDrive.id,
+          status: "APPLIED",
+          timeline: []
+        }
+      });
+
+      await prisma.notification.deleteMany({ where: { userId: studentUserId } });
+
+      await runDeadlineReminders();
+
+      const notifications = await prisma.notification.findMany({
+        where: { userId: studentUserId }
+      });
+
+      expect(notifications.length).toBe(3);
+
+      const deadlineNotify = notifications.find(n => n.title === "Deadline Reminder");
+      expect(deadlineNotify).toBeDefined();
+      expect(deadlineNotify!.message).toContain("CronCorp");
+
+      const testNotify = notifications.find(n => n.title === "Test Reminder");
+      expect(testNotify).toBeDefined();
+      expect(testNotify!.message).toContain("Test for CronCorp");
+
+      const interviewNotify = notifications.find(n => n.title === "Interview Reminder");
+      expect(interviewNotify).toBeDefined();
+      expect(interviewNotify!.message).toContain("Interview for CronCorp");
+    });
+  });
 });
