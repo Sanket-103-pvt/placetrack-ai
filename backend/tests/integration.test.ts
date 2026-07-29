@@ -391,4 +391,49 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(response.status).toBe(403);
     });
   });
+
+  describe("PATCH /api/auth/profile", () => {
+    it("allows student to self-update their profile details and recalculates readiness score", async () => {
+      const response = await request(app)
+        .patch("/api/auth/profile")
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send({
+          skills: ["React", "Node.js", "TypeScript", "Docker"],
+          phone: "9876543210",
+          linkedinUrl: "https://linkedin.com/in/teststudent",
+          projectsCount: 3,
+          internshipsCount: 1
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.phone).toBe("9876543210");
+      expect(response.body.linkedinUrl).toBe("https://linkedin.com/in/teststudent");
+      expect(response.body.projectsCount).toBe(3);
+      expect(response.body.internshipsCount).toBe(1);
+      expect(response.body.skills).toEqual(["React", "Node.js", "TypeScript", "Docker"]);
+      expect(response.body.readinessScore).toBeGreaterThan(0);
+    });
+
+    it("validates fields (e.g. invalid url fails with 400)", async () => {
+      const response = await request(app)
+        .patch("/api/auth/profile")
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send({
+          linkedinUrl: "not-a-valid-url"
+        });
+
+      expect(response.status).toBe(400);
+    });
+
+    it("blocks coordinators from accessing student self-update profile endpoint", async () => {
+      const response = await request(app)
+        .patch("/api/auth/profile")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({
+          skills: ["Python"]
+        });
+
+      expect(response.status).toBe(403);
+    });
+  });
 });
