@@ -1239,22 +1239,41 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
     }
     setSaving(true);
     try {
-      await api("/api/auth/me/student", token, {
-        method: "PATCH",
-        body: JSON.stringify({
-          name: form.name,
-          branch: form.branch,
-          cgpa: Number(form.cgpa),
-          graduationYear: Number(form.graduationYear),
-          skills: selectedSkills,
-          backlogs: Number(form.backlogs),
-          phone: form.phone || null,
-          linkedinUrl: form.linkedinUrl || null,
-          projectsCount: Number(form.projectsCount),
-          internshipsCount: Number(form.internshipsCount),
-          emailEnabled: form.emailEnabled
-        })
-      });
+      if (user.role === "STUDENT") {
+        if (form.linkedinUrl && !form.linkedinUrl.startsWith("http://") && !form.linkedinUrl.startsWith("https://")) {
+          flash("LinkedIn URL must be a valid URL (starting with http:// or https://)");
+          setSaving(false);
+          return;
+        }
+
+        await api("/api/auth/profile", token, {
+          method: "PATCH",
+          body: JSON.stringify({
+            skills: selectedSkills,
+            phone: form.phone || null,
+            linkedinUrl: form.linkedinUrl || null,
+            projectsCount: Number(form.projectsCount),
+            internshipsCount: Number(form.internshipsCount)
+          })
+        });
+      } else {
+        await api("/api/auth/me/student", token, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: form.name,
+            branch: form.branch,
+            cgpa: Number(form.cgpa),
+            graduationYear: Number(form.graduationYear),
+            skills: selectedSkills,
+            backlogs: Number(form.backlogs),
+            phone: form.phone || null,
+            linkedinUrl: form.linkedinUrl || null,
+            projectsCount: Number(form.projectsCount),
+            internshipsCount: Number(form.internshipsCount),
+            emailEnabled: form.emailEnabled
+          })
+        });
+      }
       await onSaved();
     } catch (error) {
       flash(error instanceof Error ? error.message : "Profile update failed");
@@ -1278,15 +1297,15 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
         </div>
       </div>
       <div className="profile-form">
-        <label>Name<input value={form.name} onChange={(event) => setForm((old) => ({ ...old, name: event.target.value }))} /></label>
+        <label>Name<input value={form.name} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, name: event.target.value }))} /></label>
         <label>Branch
-          <select value={form.branch} onChange={(event) => setForm((old) => ({ ...old, branch: event.target.value }))}>
+          <select value={form.branch} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, branch: event.target.value }))}>
             {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
           </select>
         </label>
-        <label>CGPA<input value={form.cgpa} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
-        <label>Graduation Year<input value={form.graduationYear} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
-        <label>Backlogs<input value={form.backlogs} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
+        <label>CGPA<input value={form.cgpa} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
+        <label>Graduation Year<input value={form.graduationYear} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
+        <label>Backlogs<input value={form.backlogs} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
         <label>Phone Number<input value={form.phone} onChange={(event) => setForm((old) => ({ ...old, phone: event.target.value }))} /></label>
         <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
         <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
