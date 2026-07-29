@@ -1,6 +1,9 @@
 import { Router } from "express";
 import { DriveStatus, UserRole } from "@prisma/client";
 import { z } from "zod";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { checkEligibility } from "../services/eligibility.js";
@@ -160,4 +163,106 @@ drivesRouter.post("/", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (r
   }
 
   response.status(201).json(drive);
+});
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 }, // Max 2 MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "image/jpg"];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only JPEG/PNG images are allowed") as any, false);
+    }
+  }
+});
+
+async function uploadToCloud(fileBuffer: Buffer, mimeType: string, companyId: string): Promise<string> {
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+
+  if (cloudName && uploadPreset) {
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const formData = new FormData();
+    const base64Data = fileBuffer.toString("base64");
+    const dataUri = `data:${mimeType};base64,${base64Data}`;
+    formData.append("file", dataUri);
+    formData.append("upload_preset", uploadPreset);
+    formData.append("public_id", `company-logo-${companyId}`);
+
+    const res = await fetch(url, { method: "POST", body: formData });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Cloudinary upload failed: ${errText}`);
+    }
+    const data = await res.json() as any;
+    return data.secure_url;
+  } else if (cloudName && apiKey && apiSecret) {
+    const timestamp = Math.round(Date.now() / 1000);
+    const publicId = `company-logo-${companyId}`;
+    const params = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+    const crypto = await import("crypto");
+    const signature = crypto.createHash("sha1").update(params).digest("hex");
+
+    const url = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const formData = new FormData();
+    const base64Data = fileBuffer.toString("base64");
+    const dataUri = `data:${mimeType};base64,${base64Data}`;
+    formData.append("file", dataUri);
+    formData.append("api_key", apiKey);
+    formData.append("timestamp", String(timestamp));
+    formData.append("public_id", publicId);
+    formData.append("signature", signature);
+
+    const res = await fetch(url, { method: "POST", body: formData });
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(`Cloudinary upload failed: ${errText}`);
+    }
+    const data = await res.json() as any;
+    return data.secure_url;
+  }
+
+  // Local fallback
+  const ext = mimeType === "image/png" ? "png" : "jpg";
+  const filename = `company-logo-${companyId}-${Date.now()}.${ext}`;
+  const uploadsDir = path.join(process.cwd(), "uploads");
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  const filePath = path.join(uploadsDir, filename);
+  await fs.promises.writeFile(filePath, fileBuffer);
+  
+  return `/uploads/${filename}`;
+}
+
+drivesRouter.post("/companies/:id/logo", authorize(UserRole.COORDINATOR, UserRole.ADMIN), upload.single("logo"), async (request, response) => {
+  const id = String(request.params.id);
+  const file = request.file;
+  if (!file) {
+    return response.status(400).json({ error: "No image file provided" });
+  }
+
+  const company = await prisma.company.findUnique({ where: { id } });
+  if (!company) {
+    return response.status(404).json({ error: "Company not found" });
+  }
+
+  try {
+    const logoUrl = await uploadToCloud(file.buffer, file.mimetype, id);
+    const updatedCompany = await prisma.company.update({
+      where: { id },
+      data: { logo: logoUrl }
+    });
+    
+    await audit(request.auth!.userId, "UPDATE", "company-logo", { companyId: id });
+    
+    response.json(updatedCompany);
+  } catch (error: any) {
+    console.error("Upload error:", error);
+    response.status(500).json({ error: error?.message ?? "Failed to upload logo" });
+  }
 });

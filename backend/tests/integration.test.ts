@@ -200,6 +200,42 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     });
   });
 
+  describe("POST /api/drives/companies/:id/logo", () => {
+    it("uploads company logo successfully", async () => {
+      const company = await prisma.company.findFirst();
+      expect(company).toBeDefined();
+
+      const response = await request(app)
+        .post(`/api/drives/companies/${company!.id}/logo`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .attach("logo", Buffer.from("fake-image-data-png"), "logo.png");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("logo");
+      expect(response.body.logo).toContain("/uploads/");
+    });
+
+    it("returns 400 for invalid file type", async () => {
+      const company = await prisma.company.findFirst();
+      const response = await request(app)
+        .post(`/api/drives/companies/${company!.id}/logo`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .attach("logo", Buffer.from("fake-text-data"), "logo.txt");
+
+      expect(response.status).toBe(400);
+    });
+
+    it("returns 403 for unauthorized upload attempts", async () => {
+      const company = await prisma.company.findFirst();
+      const response = await request(app)
+        .post(`/api/drives/companies/${company!.id}/logo`)
+        .set("Authorization", `Bearer ${studentToken}`)
+        .attach("logo", Buffer.from("fake-image-data-png"), "logo.png");
+
+      expect(response.status).toBe(403);
+    });
+  });
+
   describe("POST /api/applications", () => {
     it("submits application successfully if eligible", async () => {
       const response = await request(app)
