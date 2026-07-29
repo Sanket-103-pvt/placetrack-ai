@@ -21,7 +21,7 @@ import { testsRouter } from "./routes/tests.routes.js";
 import { questionsRouter } from "./routes/questions.routes.js";
 import { sendEmail, getEmailTemplate } from "./services/mailer.js";
 import { checkEligibility } from "./services/eligibility.js";
-
+import { initDeadlineReminderJob } from "./jobs/deadlineReminder.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -88,9 +88,9 @@ initSocket(httpServer);
 const server = httpServer.listen(port, async () => {
   console.log(`PlaceTrack API running on http://localhost:${port}`);
   try {
-    // Pre-warm DB connection so first user request doesn't pay cold-start cost
     await prisma.$connect();
     console.log("Database connection established.");
+    initDeadlineReminderJob();
     const userCount = await prisma.user.count();
     if (userCount === 0) {
       console.log("Database is empty. Initiating database auto-seed...");
