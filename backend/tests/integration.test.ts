@@ -180,6 +180,58 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     });
   });
 
+  describe("POST /api/auth/bulk-import", () => {
+    it("imports CSV of students successfully", async () => {
+      const csvData = "name,email,branch,cgpa,graduationYear,backlogs,skills\n" +
+        "Rahul Sharma,rahul@placetrack.ai,Computer Engineering,8.5,2027,0,\"Java, SQL, React\"\n" +
+        "Priya Patel,priya@placetrack.ai,Information Technology,7.9,2027,1,\"Python, HTML, CSS\"";
+
+      const response = await request(app)
+        .post("/api/auth/bulk-import")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .attach("file", Buffer.from(csvData), "students.csv");
+
+      expect(response.status).toBe(200);
+      expect(response.body).toEqual({
+        created: 2,
+        failed: 0,
+        errors: []
+      });
+
+      const rahul = await prisma.student.findFirst({ where: { name: "Rahul Sharma" } });
+      expect(rahul).toBeDefined();
+      expect(rahul!.cgpa).toBe(8.5);
+      expect(rahul!.skills).toContain("Java");
+    });
+
+    it("returns errors for rows with validation failures", async () => {
+      const csvData = "name,email,branch,cgpa,graduationYear,backlogs,skills\n" +
+        "Invalid Student,invalid-email,Computer Engineering,8.5,2027,0,Java\n" +
+        "Bad CGPA,bad-cgpa@example.com,Computer Engineering,12.5,2027,0,Java";
+
+      const response = await request(app)
+        .post("/api/auth/bulk-import")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .attach("file", Buffer.from(csvData), "students.csv");
+
+      expect(response.body.created).toBe(0);
+      expect(response.body.failed).toBe(2);
+      expect(response.body.errors.length).toBe(2);
+    });
+
+    it("returns 403 for student role attempts", async () => {
+      const csvData = "name,email,branch,cgpa,graduationYear,backlogs,skills\n" +
+        "Rahul Sharma,rahul2@placetrack.ai,Computer Engineering,8.5,2027,0,\"Java, SQL, React\"";
+
+      const response = await request(app)
+        .post("/api/auth/bulk-import")
+        .set("Authorization", `Bearer ${studentToken}`)
+        .attach("file", Buffer.from(csvData), "students.csv");
+
+      expect(response.status).toBe(403);
+    });
+  });
+
   describe("GET /api/drives", () => {
     it("returns list of drives for student", async () => {
       const response = await request(app)

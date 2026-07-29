@@ -3596,6 +3596,56 @@ function UsersManager({ token, flash, users, setUsers }: UsersManagerProps) {
   const [editingUser, setEditingUser] = useState<SessionUser | null>(null);
   const [deletingId, setDeletingId] = useState("");
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResults, setImportResults] = useState<{ created: number; failed: number; errors: { row: number; reason: string }[] } | null>(null);
+
+  const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith(".csv")) {
+      flash("Please upload a valid CSV file");
+      e.target.value = "";
+      return;
+    }
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await api<{ created: number; failed: number; errors: { row: number; reason: string }[] }>(
+        "/api/auth/bulk-import",
+        token,
+        {
+          method: "POST",
+          body: formData
+        }
+      );
+
+      setImportResults(res);
+      
+      try {
+        const freshUsers = await api<SessionUser[]>("/api/auth/users", token);
+        setUsers(freshUsers);
+      } catch (refreshErr) {
+        console.warn("Could not reload users:", refreshErr);
+      }
+
+      if (res.failed === 0) {
+        flash(`Successfully imported ${res.created} student accounts.`);
+      } else {
+        flash(`Import complete: ${res.created} succeeded, ${res.failed} failed.`);
+      }
+    } catch (error: any) {
+      flash(error?.message || "CSV student import failed");
+    } finally {
+      setImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const filteredUsers = useMemo(() => {
     return users.filter((u) => {
       const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
@@ -3648,6 +3698,16 @@ function UsersManager({ token, flash, users, setUsers }: UsersManagerProps) {
         </select>
         <button className="primary-button" onClick={() => setShowAddCoordinator(true)}>
           <Plus size={16} /> Add Coordinator
+        </button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".csv"
+          style={{ display: "none" }}
+          onChange={handleCSVImport}
+        />
+        <button className="secondary-button" onClick={() => fileInputRef.current?.click()} disabled={importing} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          {importing ? <Loader2 className="spin" size={14} /> : <Upload size={14} />} Bulk Import Students (CSV)
         </button>
       </div>
 
@@ -3716,6 +3776,49 @@ function UsersManager({ token, flash, users, setUsers }: UsersManagerProps) {
           }}
           flash={flash}
         />
+      )}
+
+      {importResults && (
+        <div className="modal-backdrop" onClick={() => setImportResults(null)}>
+          <div className="card drive-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "500px" }}>
+            <div className="drive-modal-header">
+              <div>
+                <h2 style={{ margin: 0 }}>Import Results</h2>
+                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--muted)" }}>Bulk Student CSV Import Summary</p>
+              </div>
+              <button className="drive-modal-close-btn" onClick={() => setImportResults(null)} aria-label="Close modal"><X size={16} /></button>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", margin: "16px 0" }}>
+              <div style={{ background: "rgba(34, 197, 94, 0.1)", border: "1px solid rgba(34, 197, 94, 0.15)", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+                <span style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: 700 }}>Created</span>
+                <h2 style={{ margin: "4px 0 0", color: "#22c55e", fontSize: "28px" }}>{importResults.created}</h2>
+              </div>
+              <div style={{ background: importResults.failed > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(255, 255, 255, 0.03)", border: importResults.failed > 0 ? "1px solid rgba(239, 68, 68, 0.15)" : "1px solid var(--line)", borderRadius: "10px", padding: "12px", textAlign: "center" }}>
+                <span style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase", fontWeight: 700 }}>Failed</span>
+                <h2 style={{ margin: "4px 0 0", color: importResults.failed > 0 ? "#ef4444" : "var(--text)", fontSize: "28px" }}>{importResults.failed}</h2>
+              </div>
+            </div>
+
+            {importResults.errors.length > 0 && (
+              <div style={{ marginTop: "16px" }}>
+                <strong style={{ fontSize: "13px", display: "block", marginBottom: "8px", color: "var(--text)" }}>Import Failures & Reasons</strong>
+                <div style={{ maxHeight: "200px", overflowY: "auto", border: "1px solid var(--line)", borderRadius: "8px", background: "var(--panel-2)" }}>
+                  {importResults.errors.map((err, idx) => (
+                    <div key={idx} style={{ padding: "8px 12px", borderBottom: idx < importResults.errors.length - 1 ? "1px solid var(--line)" : "none", display: "flex", gap: "10px", fontSize: "12px" }}>
+                      <span style={{ color: "var(--error)", fontWeight: 700 }}>Row {err.row}:</span>
+                      <span style={{ color: "var(--muted)" }}>{err.reason}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button className="primary-button" style={{ width: "100%", marginTop: "20px" }} onClick={() => setImportResults(null)}>
+              Done
+            </button>
+          </div>
+        </div>
       )}
     </>
   );
