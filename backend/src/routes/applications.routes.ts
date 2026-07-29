@@ -12,19 +12,52 @@ export const applicationsRouter = Router();
 applicationsRouter.use(authenticate);
 
 applicationsRouter.get("/", async (request, response) => {
+  const querySchema = z.object({
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    status: z.nativeEnum(ApplicationStatus).optional(),
+    driveId: z.string().optional(),
+    studentId: z.string().optional(),
+  });
+
+  const { page, limit, status, driveId, studentId } = querySchema.parse(request.query);
+  let targetStudentId = studentId;
+
   if (request.auth!.role === UserRole.STUDENT) {
     const student = await prisma.student.findUnique({ where: { userId: request.auth!.userId } });
     if (!student) return response.status(404).json({ error: "Student profile not found" });
-    return response.json(await prisma.application.findMany({
-      where: { studentId: student.id },
-      include: { drive: { include: { company: true } }, interview: true },
-      orderBy: { updatedAt: "desc" }
-    }));
+    targetStudentId = student.id;
   }
-  response.json(await prisma.application.findMany({
-    include: { student: { include: { user: { select: { email: true } } } }, drive: { include: { company: true } }, interview: true },
-    orderBy: { updatedAt: "desc" }
-  }));
+
+  const where: any = {};
+  if (status) where.status = status;
+  if (driveId) where.driveId = driveId;
+  if (targetStudentId) where.studentId = targetStudentId;
+
+  const [total, items] = await Promise.all([
+    prisma.application.count({ where }),
+    prisma.application.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: {
+        student: { include: { user: { select: { email: true } } } },
+        drive: { include: { company: true } },
+        interview: true
+      },
+      orderBy: { updatedAt: "desc" }
+    })
+  ]);
+
+  const pages = Math.ceil(total / limit);
+
+  response.json({
+    total,
+    pages,
+    page,
+    limit,
+    items
+  });
 });
 
 applicationsRouter.post("/", authorize(UserRole.STUDENT), async (request, response) => {
