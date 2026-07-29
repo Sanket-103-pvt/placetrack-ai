@@ -7,6 +7,7 @@ function getFirstString(param: unknown): string | undefined {
   return undefined;
 }
 import bcrypt from "bcryptjs";
+import multer from "multer";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, signToken, authorize } from "../middleware/auth.js";
@@ -287,4 +288,194 @@ authRouter.post("/users/coordinator", authenticate, authorize(UserRole.ADMIN), a
   await audit(request.auth!.userId, "CREATE_COORDINATOR", "auth", { newCoordinatorId: user.id });
   const { passwordHash: _, ...safeUser } = user;
   response.status(201).json(safeUser);
+});
+
+function parseCSV(text: string): string[][] {
+  const result: string[][] = [];
+  let row: string[] = [];
+  let col = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const next = text[i + 1];
+    if (inQuotes) {
+      if (char === '"') {
+        if (next === '"') {
+          col += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        col += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        row.push(col.trim());
+        col = "";
+      } else if (char === '\n' || char === '\r') {
+        row.push(col.trim());
+        col = "";
+        if (row.some(c => c !== "")) {
+          result.push(row);
+        }
+        row = [];
+        if (char === '\r' && next === '\n') {
+          i++; // skip \n
+        }
+      } else {
+        col += char;
+      }
+    }
+  }
+  if (col !== "" || row.length > 0) {
+    row.push(col.trim());
+    if (row.some(c => c !== "")) {
+      result.push(row);
+    }
+  }
+  return result;
+}
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 } // Max 5 MB
+});
+
+authRouter.post("/bulk-import", authenticate, authorize(UserRole.COORDINATOR, UserRole.ADMIN), upload.single("file"), async (request, response) => {
+  const file = request.file;
+  if (!file) {
+    return response.status(400).json({ error: "No CSV file uploaded" });
+  }
+
+  const csvText = file.buffer.toString("utf-8");
+  const rows = parseCSV(csvText);
+  if (rows.length < 2) {
+    return response.status(400).json({ error: "CSV is empty or missing data rows" });
+  }
+
+  const headers = rows[0].map(h => h.toLowerCase().trim());
+  const nameIdx = headers.indexOf("name");
+  const emailIdx = headers.indexOf("email");
+  const branchIdx = headers.indexOf("branch");
+  const cgpaIdx = headers.indexOf("cgpa");
+  const gradYearIdx = headers.indexOf("graduationyear");
+  const backlogsIdx = headers.indexOf("backlogs");
+  const skillsIdx = headers.indexOf("skills");
+
+  if (nameIdx === -1 || emailIdx === -1 || branchIdx === -1 || cgpaIdx === -1 || gradYearIdx === -1 || backlogsIdx === -1 || skillsIdx === -1) {
+    return response.status(400).json({ error: "CSV is missing required headers. Required: name, email, branch, cgpa, graduationYear, backlogs, skills." });
+  }
+
+  let createdCount = 0;
+  let failedCount = 0;
+  const errors: { row: number; reason: string }[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1; // Human readable 1-based row number
+
+    if (row.length === 0 || (row.length === 1 && row[0] === "")) {
+      continue;
+    }
+
+    const maxIdx = Math.max(nameIdx, emailIdx, branchIdx, cgpaIdx, gradYearIdx, backlogsIdx, skillsIdx);
+    if (row.length <= maxIdx) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: "Row has insufficient columns" });
+      continue;
+    }
+
+    const name = row[nameIdx].trim();
+    const email = row[emailIdx].trim().toLowerCase();
+    const branch = row[branchIdx].trim();
+    const cgpaStr = row[cgpaIdx].trim();
+    const gradYearStr = row[gradYearIdx].trim();
+    const backlogsStr = row[backlogsIdx].trim();
+    const skillsRaw = row[skillsIdx].trim();
+
+    if (!name || !email || !branch || !cgpaStr || !gradYearStr || !backlogsStr) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: "Missing required fields in columns" });
+      continue;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: `Invalid email address: ${email}` });
+      continue;
+    }
+
+    const cgpa = parseFloat(cgpaStr);
+    if (isNaN(cgpa) || cgpa < 0 || cgpa > 10) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: `Invalid CGPA value: ${cgpaStr}` });
+      continue;
+    }
+
+    const graduationYear = parseInt(gradYearStr, 10);
+    if (isNaN(graduationYear) || graduationYear < 2024 || graduationYear > 2035) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: `Invalid graduation year value: ${gradYearStr}` });
+      continue;
+    }
+
+    const backlogs = parseInt(backlogsStr, 10);
+    if (isNaN(backlogs) || backlogs < 0) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: `Invalid backlogs value: ${backlogsStr}` });
+      continue;
+    }
+
+    const skills = skillsRaw ? skillsRaw.split(",").map(s => s.trim()).filter(s => s !== "") : [];
+    const defaultPassword = "Welcome@123";
+
+    try {
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing) {
+        failedCount++;
+        errors.push({ row: rowNum, reason: `Email ${email} is already registered` });
+        continue;
+      }
+
+      const passwordHash = await bcrypt.hash(defaultPassword, 10);
+      const readinessScore = Math.min(95, Math.max(35, Math.round(cgpa * 8 + skills.length * 3 - backlogs * 8)));
+
+      await prisma.user.create({
+        data: {
+          email,
+          passwordHash,
+          role: "STUDENT",
+          student: {
+            create: {
+              name,
+              branch,
+              cgpa,
+              graduationYear,
+              skills,
+              backlogs,
+              readinessScore,
+              mockTestCount: 0
+            }
+          }
+        }
+      });
+
+      createdCount++;
+    } catch (err: any) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: err?.message || "Failed to create user record in database" });
+    }
+  }
+
+  await audit(request.auth!.userId, "IMPORT", "students", { count: createdCount }).catch(() => {});
+
+  response.json({
+    created: createdCount,
+    failed: failedCount,
+    errors
+  });
 });
