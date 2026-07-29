@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { UserRole, Prisma } from "@prisma/client";
+import { UserRole } from "@prisma/client";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
@@ -69,24 +69,4 @@ testsRouter.post("/:id/submit", authorize(UserRole.STUDENT), async (request, res
   await prisma.student.update({ where: { id: student.id }, data: { mockTestCount: { increment: 1 } } });
   await audit(request.auth!.userId, "SUBMIT", "aptitude-test", { testId: test.id, accuracy });
   response.json({ ...result, totalQuestions: test.questions.length });
-});
-
-testsRouter.get("/debug-error/:type", async (request, response) => {
-  const { type } = request.params;
-  if (type === "unique") {
-    throw new Prisma.PrismaClientKnownRequestError("Duplicate key", {
-      code: "P2002",
-      clientVersion: "6.19.3"
-    });
-  }
-  if (type === "notfound") {
-    throw new Prisma.PrismaClientKnownRequestError("Record not found", {
-      code: "P2025",
-      clientVersion: "6.19.3"
-    });
-  }
-  if (type === "general") {
-    throw new Error("Generic error message");
-  }
-  response.json({ ok: true });
 });

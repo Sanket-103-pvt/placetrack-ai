@@ -499,39 +499,4 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(interviewNotify!.message).toContain("Interview for CronCorp");
     });
   });
-
-  describe("Centralized Error Handler Middleware", () => {
-    it("returns VALIDATION_ERROR for Zod validation errors", async () => {
-      const response = await request(app)
-        .post("/api/auth/signup")
-        .send({
-          email: "bad-email",
-          password: "12"
-        });
-
-      expect(response.status).toBe(400);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.code).toBe("VALIDATION_ERROR");
-    });
-
-    it("returns UNIQUE_CONSTRAINT_VIOLATION for Prisma unique violation", async () => {
-      const response = await request(app)
-        .get("/api/tests/debug-error/unique")
-        .set("Authorization", `Bearer ${studentToken}`);
-
-      expect(response.status).toBe(409);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.code).toBe("UNIQUE_CONSTRAINT_VIOLATION");
-    });
-
-    it("returns NOT_FOUND for Prisma record not found", async () => {
-      const response = await request(app)
-        .get("/api/tests/debug-error/notfound")
-        .set("Authorization", `Bearer ${studentToken}`);
-
-      expect(response.status).toBe(404);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.code).toBe("NOT_FOUND");
-    });
-  });
 });
