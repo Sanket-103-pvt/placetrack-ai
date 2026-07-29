@@ -249,6 +249,41 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     });
   });
 
+  describe("GET /api/applications", () => {
+    it("returns paginated applications with envelope for admin", async () => {
+      const response = await request(app)
+        .get("/api/applications?page=1&limit=5")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty("total");
+      expect(response.body).toHaveProperty("pages");
+      expect(response.body).toHaveProperty("page", 1);
+      expect(response.body).toHaveProperty("limit", 5);
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeGreaterThan(0);
+    });
+
+    it("filters applications by status", async () => {
+      const response = await request(app)
+        .get("/api/applications?status=SHORTLISTED")
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.items.every((item: any) => item.status === "SHORTLISTED")).toBe(true);
+    });
+
+    it("restricts student to only their own applications", async () => {
+      const response = await request(app)
+        .get("/api/applications")
+        .set("Authorization", `Bearer ${studentToken}`);
+
+      expect(response.status).toBe(200);
+      // All returned items must belong to the logged-in student's studentId
+      expect(response.body.items.every((item: any) => item.student.userId === studentUserId)).toBe(true);
+    });
+  });
+
   describe("GET /api/reports/analytics", () => {
     it("returns analytics grouping to coordinator/admin", async () => {
       const response = await request(app)
