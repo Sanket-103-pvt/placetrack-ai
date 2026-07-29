@@ -13,6 +13,7 @@ import { prisma } from "../lib/prisma.js";
 import { authenticate, signToken, authorize } from "../middleware/auth.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
+import { predictReadiness } from "../services/readiness.js";
 
 export const authRouter = Router();
 
@@ -478,4 +479,63 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.COORDINATOR, Us
     failed: failedCount,
     errors
   });
+});
+
+const profilePatchSchema = z.object({
+  skills: z.array(z.string()).optional(),
+  phone: z.string().nullable().optional(),
+  linkedinUrl: z.string().url().nullable().or(z.literal("")).optional(),
+  projectsCount: z.number().int().min(0).optional(),
+  internshipsCount: z.number().int().min(0).optional()
+});
+
+authRouter.patch("/profile", authenticate, authorize(UserRole.STUDENT), async (request, response) => {
+  const input = profilePatchSchema.parse(request.body);
+  
+  const student = await prisma.student.findUnique({
+    where: { userId: request.auth!.userId },
+    include: { testResults: true }
+  });
+  if (!student) {
+    return response.status(404).json({ error: "Student profile not found" });
+  }
+
+  const updateData: any = {};
+  if (input.skills !== undefined) updateData.skills = input.skills;
+  if (input.phone !== undefined) updateData.phone = input.phone;
+  if (input.linkedinUrl !== undefined) {
+    updateData.linkedinUrl = input.linkedinUrl === "" ? null : input.linkedinUrl;
+  }
+  if (input.projectsCount !== undefined) updateData.projectsCount = input.projectsCount;
+  if (input.internshipsCount !== undefined) updateData.internshipsCount = input.internshipsCount;
+
+  const updatedSkills = input.skills ?? student.skills;
+  const updatedProjectsCount = input.projectsCount ?? student.projectsCount;
+  const updatedInternshipsCount = input.internshipsCount ?? student.internshipsCount;
+
+  const averageAccuracy = student.testResults.length
+    ? student.testResults.reduce((sum, item) => sum + item.accuracy, 0) / student.testResults.length
+    : 0;
+
+  const readiness = predictReadiness({
+    cgpa: student.cgpa,
+    aptitudeAccuracy: averageAccuracy,
+    codingScore: 72 + Math.min(updatedSkills.length * 2, 18),
+    communicationScore: 70,
+    projects: updatedProjectsCount,
+    internships: updatedInternshipsCount,
+    mockTests: student.mockTestCount,
+    backlogs: student.backlogs
+  });
+
+  updateData.readinessScore = readiness.score;
+
+  const updatedStudent = await prisma.student.update({
+    where: { id: student.id },
+    data: updateData
+  });
+
+  await audit(request.auth!.userId, "UPDATE", "student-profile", { studentId: student.id });
+
+  response.json(updatedStudent);
 });
