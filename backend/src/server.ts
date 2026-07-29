@@ -22,6 +22,7 @@ import { questionsRouter } from "./routes/questions.routes.js";
 import { sendEmail, getEmailTemplate } from "./services/mailer.js";
 import { checkEligibility } from "./services/eligibility.js";
 import { initDeadlineReminderJob } from "./jobs/deadlineReminder.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
@@ -66,21 +67,39 @@ app.use("/api/reports", reportsRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/uploads", express.static("uploads"));
 
+function wrapRouter(router: any) {
+  if (!router || !router.stack) return;
+  router.stack.forEach((layer: any) => {
+    if (layer.route) {
+      layer.route.stack.forEach((routeLayer: any) => {
+        const originalHandler = routeLayer.handle;
+        if (originalHandler && originalHandler.length <= 3) {
+          routeLayer.handle = async (req: any, res: any, next: any) => {
+            try {
+              await originalHandler(req, res, next);
+            } catch (err) {
+              next(err);
+            }
+          };
+        }
+      });
+    }
+  });
+}
+
+wrapRouter(authRouter);
+wrapRouter(dashboardRouter);
+wrapRouter(drivesRouter);
+wrapRouter(applicationsRouter);
+wrapRouter(testsRouter);
+wrapRouter(notificationsRouter);
+wrapRouter(aiRouter);
+wrapRouter(reportsRouter);
+wrapRouter(questionsRouter);
+
 app.use((_request, response) => response.status(404).json({ error: "Route not found" }));
 
-// Fully corrected Express global error handler middleware block
-app.use((error: any, _request: express.Request, response: express.Response, _next: express.NextFunction) => {
-  if (error instanceof z.ZodError) return response.status(400).json({ error: "Invalid request", issues: error.issues });
-  if (error && typeof error === "object" && error.constructor?.name === "PrismaClientKnownRequestError") {
-    if (error.code === "P2002") return response.status(409).json({ error: "This record already exists" });
-    if (error.code === "P2025") return response.status(404).json({ error: "Record not found" });
-  }
-  if (error instanceof MulterError || (error instanceof Error && error.message.includes("allowed"))) {
-    return response.status(400).json({ error: error.message });
-  }
-  console.error(error);
-  return response.status(500).json({ error: "Something went wrong" });
-});
+app.use(errorHandler);
 
 const httpServer = createServer(app);
 initSocket(httpServer);
