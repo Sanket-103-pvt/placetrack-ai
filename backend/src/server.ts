@@ -64,6 +64,7 @@ app.use("/api/notifications", notificationsRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/questions", questionsRouter);
+app.use("/uploads", express.static("uploads"));
 
 app.use((_request, response) => response.status(404).json({ error: "Route not found" }));
 
@@ -74,7 +75,9 @@ app.use((error: any, _request: express.Request, response: express.Response, _nex
     if (error.code === "P2002") return response.status(409).json({ error: "This record already exists" });
     if (error.code === "P2025") return response.status(404).json({ error: "Record not found" });
   }
-  if (error instanceof MulterError) return response.status(400).json({ error: error.message });
+  if (error instanceof MulterError || (error instanceof Error && error.message.includes("allowed"))) {
+    return response.status(400).json({ error: error.message });
+  }
   console.error(error);
   return response.status(500).json({ error: "Something went wrong" });
 });

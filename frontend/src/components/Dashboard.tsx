@@ -30,7 +30,7 @@ type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptit
 
 type Drive = {
   id: string;
-  company: { name: string; website?: string | null; description?: string | null };
+  company: { name: string; website?: string | null; description?: string | null; logo?: string | null };
   role: string;
   package: number;
   location: string;
@@ -998,7 +998,13 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
       <div className="card drive-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="drive-modal-header">
           <div className="drive-modal-company-info">
-            <div className="company-logo large">{initials(drive.company.name)}</div>
+            <div className="company-logo large" style={{ overflow: "hidden", display: "grid", placeItems: "center" }}>
+              {drive.company.logo ? (
+                <img src={getLogoUrl(drive.company.logo)!} alt={drive.company.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                initials(drive.company.name)
+              )}
+            </div>
             <div>
               <h2>{drive.company.name}</h2>
               <p>{drive.role}</p>
@@ -1839,7 +1845,13 @@ function Applications({ role, token, applications, onRefresh, flash, loading }: 
         : <div className="application-detail-list">
         {items.map((item) => <section className="card application-detail" key={item.id}>
           <div className="application-detail-head">
-            <div className="company-logo large">{initials(item.drive.company.name)}</div>
+            <div className="company-logo large" style={{ overflow: "hidden", display: "grid", placeItems: "center" }}>
+              {item.drive.company.logo ? (
+                <img src={getLogoUrl(item.drive.company.logo)!} alt={item.drive.company.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                initials(item.drive.company.name)
+              )}
+            </div>
             <div><h3>{item.drive.company.name}</h3><p>{item.drive.role}{item.student ? ` · ${item.student.name}` : ""}</p></div>
             <span className="status-badge">{pretty(item.status)}</span>
             <div className="deadline"><span>Updated</span><strong>{new Date(item.updatedAt).toLocaleDateString()}</strong></div>
@@ -2434,9 +2446,14 @@ function Opportunities({
                   placeItems: "center",
                   fontSize: "16px",
                   fontWeight: 800,
-                  margin: 0
+                  margin: 0,
+                  overflow: "hidden"
                 }}>
-                  {initials(drive.company.name)}
+                  {drive.company.logo ? (
+                    <img src={getLogoUrl(drive.company.logo)!} alt={drive.company.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    initials(drive.company.name)
+                  )}
                 </div>
                 <div>
                   <h3 style={{ margin: 0, font: "700 17px 'Manrope'", color: "var(--text)" }}>{drive.company.name}</h3>
@@ -3025,10 +3042,35 @@ function DriveCreator({ token, flash, onCreated }: { token: string; flash: (mess
     deadline: new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10)
   });
   const [allowedBranches, setAllowedBranches] = useState<string[]>(["Computer Engineering", "Information Technology"]);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate type
+    const allowed = ["image/jpeg", "image/png", "image/jpg"];
+    if (!allowed.includes(file.type)) {
+      flash("Only JPEG/PNG images are allowed");
+      e.target.value = ""; // Reset
+      setLogoFile(null);
+      return;
+    }
+
+    // Validate size (max 2 MB = 2 * 1024 * 1024)
+    if (file.size > 2 * 1024 * 1024) {
+      flash("Image size must be less than 2 MB");
+      e.target.value = ""; // Reset
+      setLogoFile(null);
+      return;
+    }
+
+    setLogoFile(file);
+  };
 
   const create = async () => {
     try {
-      await api("/api/drives", token, {
+      const drive = await api<any>("/api/drives", token, {
         method: "POST",
         body: JSON.stringify({
           company: { name: form.company, description: `${form.company} campus hiring partner.` },
@@ -3045,6 +3087,17 @@ function DriveCreator({ token, flash, onCreated }: { token: string; flash: (mess
           status: "OPEN"
         })
       });
+
+      // If a logo file was selected, upload it
+      if (logoFile && drive?.company?.id) {
+        const formData = new FormData();
+        formData.append("logo", logoFile);
+        await api(`/api/drives/companies/${drive.company.id}/logo`, token, {
+          method: "POST",
+          body: formData
+        });
+      }
+
       flash("Drive created");
       onCreated();
     } catch (error) {
@@ -3063,7 +3116,34 @@ function DriveCreator({ token, flash, onCreated }: { token: string; flash: (mess
           <label>Location<input value={form.location} onChange={(e) => setForm(old => ({ ...old, location: e.target.value }))} /></label>
           <label>Min CGPA<input value={form.minCgpa} onChange={(e) => setForm(old => ({ ...old, minCgpa: e.target.value }))} /></label>
           <label>Deadline<input value={form.deadline} type="date" onChange={(e) => setForm(old => ({ ...old, deadline: e.target.value }))} /></label>
+          <label>
+            Company Logo (JPEG/PNG, Max 2MB)
+            <input 
+              type="file" 
+              accept="image/png, image/jpeg, image/jpg" 
+              onChange={handleFileChange}
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px dashed rgba(255, 255, 255, 0.1)",
+                padding: "8px",
+                borderRadius: "8px",
+                cursor: "pointer",
+                width: "100%",
+                boxSizing: "border-box"
+              }}
+            />
+          </label>
         </div>
+        {logoFile && (
+          <div style={{ marginTop: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+            <img 
+              src={URL.createObjectURL(logoFile)} 
+              alt="Logo preview" 
+              style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }} 
+            />
+            <span style={{ fontSize: "12px", color: "var(--success)" }}>Logo selected</span>
+          </div>
+        )}
         <div style={{ marginTop: "14px", display: "grid", gap: "8px" }}>
           <span style={{ fontSize: "10px", color: "var(--muted)", fontWeight: 800, textTransform: "uppercase", letterSpacing: ".11em" }}>Allowed Branches</span>
           <div className="branch-checkbox-grid">
@@ -3458,7 +3538,13 @@ function Metric({ label, value }: { label: string; value: number }) {
 function MiniApplicationList({ rows }: { rows: Application[] }) {
   if (!rows.length) return <EmptyState title="No applications" copy="Recent applications will appear here." />;
   return <div className="application-list">{rows.map((item) => <div className="application-row" key={item.id}>
-    <div className="company-logo">{initials(item.drive.company.name)}</div>
+    <div className="company-logo" style={{ overflow: "hidden", display: "grid", placeItems: "center" }}>
+      {item.drive.company.logo ? (
+        <img src={getLogoUrl(item.drive.company.logo)!} alt={item.drive.company.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      ) : (
+        initials(item.drive.company.name)
+      )}
+    </div>
     <div className="company-name"><strong>{item.drive.company.name}</strong><span>{item.drive.role}</span></div>
     <span className="status-badge">{pretty(item.status)}</span>
     <span className="date">{new Date(item.updatedAt).toLocaleDateString()}</span>
@@ -3479,6 +3565,13 @@ function AnalysisPanel({ result }: { result: Record<string, unknown> | null }) {
 
 function EmptyState({ title, copy }: { title: string; copy: string }) {
   return <div className="empty-state"><Sparkles size={22} /><strong>{title}</strong><span>{copy}</span></div>;
+}
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+function getLogoUrl(logo: string | null | undefined) {
+  if (!logo) return null;
+  if (logo.startsWith("http://") || logo.startsWith("https://") || logo.startsWith("data:")) return logo;
+  return `${API_BASE}${logo}`;
 }
 
 function initials(value: string) {
